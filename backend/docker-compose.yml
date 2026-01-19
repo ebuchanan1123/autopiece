@@ -1,0 +1,48 @@
+services:
+  db:
+    ports:
+        - "5432:5432"
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: autoparts
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d autoparts"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: autopiece_api
+    ports:
+      - "3002:3000"
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgres://postgres:password@db:5432/autoparts
+
+      JWT_SECRET: a7ec9a328c2eb75d39f8c2f2cf5b3c24440a82f19b7d0db25562fb60d7debec636e0dc79d5963ea072a4c7c18e37ad56
+      JWT_EXPIRES_IN: 15m
+      JWT_REFRESH_EXPIRES_IN: 30d
+
+      COOKIE_SECURE: "true"
+      COOKIE_DOMAIN: "mydomain.com"
+      COOKIE_SAMESITE: none
+
+      CORS_ORIGINS: http://localhost:3000,http://localhost:3001
+
+      SESSION_FINGERPRINT_SECRET: dev_fingerprint_secret_very_secure_very_long_very_secret_very_nice_very_mysterious
+      SESSION_FINGERPRINT_STRICT: "false"
+    depends_on:
+      db:
+        condition: service_healthy
+    command: sh -c "npm run migration:run:prod && node dist/main.js"
+
+volumes:
+  db_data:

@@ -19,11 +19,65 @@ const typeorm_2 = require("typeorm");
 const user_entity_1 = require("./user.entity");
 let UsersService = class UsersService {
     usersRepository;
+    MAX_FAILED_LOGINS = 5;
+    LOCK_MINUTES = 10;
     constructor(usersRepository) {
         this.usersRepository = usersRepository;
     }
     findAll() {
         return this.usersRepository.find();
+    }
+    findByEmail(email) {
+        return this.usersRepository.findOne({ where: { email } });
+    }
+    async findById(id) {
+        return this.usersRepository.findOne({ where: { id } });
+    }
+    async createUser(params) {
+        const user = this.usersRepository.create({
+            ...params,
+            failedLoginCount: 0,
+            lastFailedLoginAt: null,
+            lockUntil: null,
+        });
+        return this.usersRepository.save(user);
+    }
+    isLocked(user) {
+        return !!user.lockUntil && user.lockUntil.getTime() > Date.now();
+    }
+    async resetLoginFailures(userId) {
+        await this.usersRepository.update({ id: userId }, {
+            failedLoginCount: 0,
+            lastFailedLoginAt: null,
+            lockUntil: null,
+        });
+    }
+    async recordFailedLogin(userId) {
+        await this.usersRepository
+            .createQueryBuilder()
+            .update(user_entity_1.User)
+            .set({
+            failedLoginCount: () => `"failedLoginCount" + 1`,
+            lastFailedLoginAt: () => 'NOW()',
+        })
+            .where('id = :id', { id: userId })
+            .execute();
+        await this.usersRepository
+            .createQueryBuilder()
+            .update(user_entity_1.User)
+            .set({
+            lockUntil: () => `NOW() + INTERVAL '${this.LOCK_MINUTES} minutes'`,
+        })
+            .where('id = :id', { id: userId })
+            .andWhere(`"failedLoginCount" >= :max`, { max: this.MAX_FAILED_LOGINS })
+            .execute();
+    }
+    async updatePasswordHash(userId, passwordHash) {
+        await this.usersRepository.update({ id: userId }, { passwordHash });
+    }
+    async setPasswordHashIfMatches(userId, oldHash, newHash) {
+        const result = await this.usersRepository.update({ id: userId, passwordHash: oldHash }, { passwordHash: newHash });
+        return (result.affected ?? 0) > 0;
     }
 };
 exports.UsersService = UsersService;

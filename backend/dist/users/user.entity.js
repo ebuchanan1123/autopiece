@@ -11,11 +11,19 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.User = void 0;
 const typeorm_1 = require("typeorm");
+const service_entity_1 = require("../services/service.entity");
 let User = class User {
     id;
     email;
     passwordHash;
     role;
+    phone;
+    failedLoginCount;
+    lastFailedLoginAt;
+    lockUntil;
+    createdAt;
+    updatedAt;
+    listings;
 };
 exports.User = User;
 __decorate([
@@ -31,9 +39,37 @@ __decorate([
     __metadata("design:type", String)
 ], User.prototype, "passwordHash", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ default: 'client' }),
+    (0, typeorm_1.Column)({ type: 'varchar', default: 'client' }),
     __metadata("design:type", String)
 ], User.prototype, "role", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", String)
+], User.prototype, "phone", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'int', default: 0 }),
+    __metadata("design:type", Number)
+], User.prototype, "failedLoginCount", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'timestamptz', nullable: true }),
+    __metadata("design:type", Object)
+], User.prototype, "lastFailedLoginAt", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'timestamptz', nullable: true }),
+    __metadata("design:type", Object)
+], User.prototype, "lockUntil", void 0);
+__decorate([
+    (0, typeorm_1.CreateDateColumn)({ type: 'timestamptz' }),
+    __metadata("design:type", Date)
+], User.prototype, "createdAt", void 0);
+__decorate([
+    (0, typeorm_1.UpdateDateColumn)({ type: 'timestamptz' }),
+    __metadata("design:type", Date)
+], User.prototype, "updatedAt", void 0);
+__decorate([
+    (0, typeorm_1.OneToMany)(() => service_entity_1.Service, (service) => service.freelancer),
+    __metadata("design:type", Array)
+], User.prototype, "listings", void 0);
 exports.User = User = __decorate([
     (0, typeorm_1.Entity)()
 ], User);

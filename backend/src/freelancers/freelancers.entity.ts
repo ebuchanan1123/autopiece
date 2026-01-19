@@ -8,7 +8,7 @@ import {
 import { User } from '../users/user.entity';
 
 @Entity()
-export class SellerProfile {
+export class FreelancerProfile {
   @PrimaryGeneratedColumn()
   id: number;
 
