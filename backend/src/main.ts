@@ -85,7 +85,8 @@ async function bootstrap() {
   // - No secret leakage, consistent error format, better debugging.
   app.useGlobalFilters(app.get(AllExceptionsFilter));
 
-  await app.listen(process.env.PORT ? Number(process.env.PORT) : 3000);
+  const port = Number(process.env.PORT) || 3000;
+  await app.listen(port, '0.0.0.0');
 }
 
 bootstrap();
