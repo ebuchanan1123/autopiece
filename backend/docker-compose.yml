@@ -21,19 +21,20 @@ services:
       dockerfile: Dockerfile
     container_name: autopiece_api
     ports:
-      - "3002:3000"
+      - "127.0.0.1:3002:3000"
     environment:
-      NODE_ENV: production
+      NODE_ENV: development
       PORT: 3000
       DATABASE_URL: postgres://postgres:password@db:5432/autoparts
+      DB_SSL: "false"
 
       JWT_SECRET: a7ec9a328c2eb75d39f8c2f2cf5b3c24440a82f19b7d0db25562fb60d7debec636e0dc79d5963ea072a4c7c18e37ad56
       JWT_EXPIRES_IN: 15m
       JWT_REFRESH_EXPIRES_IN: 30d
 
-      COOKIE_SECURE: "true"
-      COOKIE_DOMAIN: "mydomain.com"
-      COOKIE_SAMESITE: none
+      COOKIE_SECURE: "false"
+      COOKIE_SAMESITE: lax
+      COOKIE_DOMAIN: ""
 
       CORS_ORIGINS: http://localhost:3000,http://localhost:3001
 

@@ -26,6 +26,8 @@ const schema = z
     DB_USER: z.string().default('postgres'),
     DB_PASSWORD: z.string().default('password'),
     DB_NAME: z.string().default('autoparts'),
+    DB_SSL: boolFromString.default(false),
+
 
     // JWT (unified)
     JWT_SECRET: secretSchema,
