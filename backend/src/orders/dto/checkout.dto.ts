@@ -4,7 +4,7 @@ import { Type } from 'class-transformer';
 class CheckoutItemDto {
   @IsInt()
   @IsPositive()
-  serviceId: number;
+  listingId: number;
 
   @IsInt()
   @IsPositive()

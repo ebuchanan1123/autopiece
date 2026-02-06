@@ -11,16 +11,16 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
 import { UsersModule } from './users/users.module';
-import { FreelancersModule } from './freelancers/freelancers.module';
+import { SellersModule } from './sellers/sellers.module';
 import { AuthModule } from './auth/auth.module';
-import { ServicesModule } from './services/service.module';
+import { ListingModule } from './listings/listing.module';
 
 
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 
 @Module({
   imports: [
-    ServicesModule,
+    ListingModule,
     OrdersModule,
     ConfigModule.forRoot({ isGlobal: true }),
 
@@ -89,7 +89,7 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
     }),
 
     UsersModule,
-    FreelancersModule,
+    SellersModule,
     AuthModule,
   ],
   controllers: [AppController],

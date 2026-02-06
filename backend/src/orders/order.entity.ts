@@ -7,62 +7,31 @@ import {
   Index,
 } from 'typeorm';
 
-export type PaymentMethod = 'online';
-export type OrderStatus =
-  | 'pending_payment'
-  | 'paid'
-  | 'in_progress'
-  | 'delivered'
-  | 'revision_requested'
-  | 'completed'
-  | 'cancelled'
-  | 'refunded';
+export type PaymentMethod = 'online' | 'in_store';
+export type OrderStatus = 'reserved' | 'paid' | 'cancelled';
 
 @Entity()
-@Index(['buyerId', 'createdAt'])
-@Index(['freelancerId', 'createdAt'])
-@Index(['serviceId'])
+@Index(['customerId', 'createdAt'])
+@Index(['orderNumber'], { unique: true })
 export class Order {
   @PrimaryGeneratedColumn()
   id: number;
 
   @Column({ type: 'int' })
-  buyerId: number;
+  customerId: number;
 
-  // Single-service order fields
-  @Column({ type: 'int' })
-  serviceId: number;
+  // human-friendly order number
+  @Column({ type: 'varchar', length: 32 })
+  orderNumber: string;
 
-  @Column({ type: 'int' })
-  freelancerId: number;
-
-  @Column({ type: 'int' })
-  unitPriceDzd: number;
-
-  @Column({ type: 'varchar', length: 140 })
-  titleSnapshot: string;
-
-  @Column({ type: 'varchar', length: 10, default: 'online' })
+  @Column({ type: 'varchar', length: 10, default: 'in_store' })
   paymentMethod: PaymentMethod;
 
-  @Column({ type: 'varchar', length: 32, default: 'pending_payment' })
+  @Column({ type: 'varchar', length: 16, default: 'reserved' })
   status: OrderStatus;
 
-  @Column({ type: 'int' })
+  @Column({ type: 'int', default: 0 })
   totalDzd: number;
-
-  // Buyer brief / requirements
-  @Column({ type: 'jsonb', nullable: true })
-  requirements: any | null;
-
-  @Column({ type: 'timestamptz', nullable: true })
-  requirementsSubmittedAt: Date | null;
-
-  @Column({ type: 'timestamptz', nullable: true })
-  dueAt: Date | null;
-
-  @Column({ type: 'timestamptz', nullable: true })
-  completedAt: Date | null;
 
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;

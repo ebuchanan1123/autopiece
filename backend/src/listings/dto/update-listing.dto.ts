@@ -1,11 +1,11 @@
 import { IsInt, IsOptional, IsString, Min, MaxLength, IsIn } from 'class-validator';
-import type { ServiceStatus } from '../service.entity';
+import type { ListingStatus } from '../listing.entity';
 import { PartialType } from '@nestjs/mapped-types';
-import { CreateServiceDto } from './create-service.dto';
+import { CreateListingDto } from './create-listing.dto';
 
 
 
-export class UpdateServiceDto extends PartialType(CreateServiceDto) {
+export class UpdateListingDto extends PartialType(CreateListingDto) {
   @IsOptional()
   @IsString()
   @MaxLength(120)
@@ -54,5 +54,5 @@ export class UpdateServiceDto extends PartialType(CreateServiceDto) {
 
   @IsOptional()
   @IsIn(['active', 'sold', 'hidden', 'draft', 'removed'])
-  status?: ServiceStatus;
+  status?: ListingStatus;
 }

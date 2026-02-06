@@ -6,10 +6,10 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { Service } from '../services/service.entity';
+import { Listing } from '../listings/listing.entity';
 
 
-export type UserRole = 'client' | 'freelancer' | 'admin';
+export type UserRole = 'client' | 'seller' | 'admin';
 
 @Entity()
 export class User {
@@ -44,6 +44,6 @@ export class User {
   @UpdateDateColumn({ type: 'timestamptz' })
   updatedAt: Date;
 
-  @OneToMany(() => Service, (service) => service.freelancer)
-  listings: Service[];
+  @OneToMany(() => Listing, (listing) => listing.seller)
+  listings: Listing[];
 }

@@ -9,16 +9,16 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { ServicesService } from './services.service';
-import { CreateServiceDto } from './dto/create-service.dto';
-import { UpdateServiceDto } from './dto/update-service.dto';
+import { ListingsService } from './listings.service';
+import { CreateListingDto } from './dto/create-listing.dto';
+import { UpdateListingDto } from './dto/update-listing.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { JwtUser } from '../auth/types/jwt-user.type';
 
-@Controller('Services')
-export class ServicesController {
-  constructor(private readonly service: ServicesService) {}
+@Controller('listings')
+export class ListingsController {
+  constructor(private readonly service: ListingsService) {}
 
   @Get()
   findPublic(@Query() query: any) {
@@ -27,7 +27,7 @@ export class ServicesController {
 
   @UseGuards(JwtAuthGuard)
   @Post()
-  create(@Body() dto: CreateServiceDto, @CurrentUser() user: JwtUser) {
+  create(@Body() dto: CreateListingDto, @CurrentUser() user: JwtUser) {
     return this.service.create(dto, user);
   }
 
@@ -35,7 +35,7 @@ export class ServicesController {
   @Patch(':id')
   update(
     @Param('id') id: string,
-    @Body() dto: UpdateServiceDto,
+    @Body() dto: UpdateListingDto,
     @CurrentUser() user: JwtUser,
   ) {
     return this.service.update(+id, dto, user);

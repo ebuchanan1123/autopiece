@@ -5,9 +5,9 @@ import {
   Min,
   IsIn,
 } from 'class-validator';
-import type { ServiceCondition, ServiceStatus } from '../service.entity';
+import type { ListingStatus } from '../listing.entity';
 
-export class CreateServiceDto {
+export class CreateListingDto {
   @IsString()
   title: string;
 
@@ -39,6 +39,6 @@ export class CreateServiceDto {
 
   @IsOptional()
   @IsIn(['active', 'draft'])
-  status?: ServiceStatus;
-  serviceId: any;
+  status?: ListingStatus;
+  listingId: any;
 }

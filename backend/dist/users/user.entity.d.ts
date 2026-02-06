@@ -1,5 +1,5 @@
-import { Service } from '../services/service.entity';
-export type UserRole = 'client' | 'freelancer' | 'admin';
+import { Listing } from '../listings/listing.entity';
+export type UserRole = 'client' | 'seller' | 'admin';
 export declare class User {
     id: number;
     email: string;
@@ -11,5 +11,5 @@ export declare class User {
     lockUntil: Date | null;
     createdAt: Date;
     updatedAt: Date;
-    listings: Service[];
+    listings: Listing[];
 }

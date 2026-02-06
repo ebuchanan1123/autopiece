@@ -17,9 +17,9 @@ const core_1 = require("@nestjs/core");
 const app_controller_1 = require("./app.controller");
 const app_service_1 = require("./app.service");
 const users_module_1 = require("./users/users.module");
-const freelancers_module_1 = require("./freelancers/freelancers.module");
+const sellers_module_1 = require("./sellers/sellers.module");
 const auth_module_1 = require("./auth/auth.module");
-const service_module_1 = require("./services/service.module");
+const listing_module_1 = require("./listings/listing.module");
 const all_exceptions_filter_1 = require("./common/filters/all-exceptions.filter");
 let AppModule = class AppModule {
 };
@@ -27,7 +27,7 @@ exports.AppModule = AppModule;
 exports.AppModule = AppModule = __decorate([
     (0, common_1.Module)({
         imports: [
-            service_module_1.ServicesModule,
+            listing_module_1.ListingModule,
             orders_module_1.OrdersModule,
             config_1.ConfigModule.forRoot({ isGlobal: true }),
             nestjs_pino_1.LoggerModule.forRoot({
@@ -85,7 +85,7 @@ exports.AppModule = AppModule = __decorate([
                 },
             }),
             users_module_1.UsersModule,
-            freelancers_module_1.FreelancersModule,
+            sellers_module_1.SellersModule,
             auth_module_1.AuthModule,
         ],
         controllers: [app_controller_1.AppController],

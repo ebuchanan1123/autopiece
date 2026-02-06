@@ -51,7 +51,8 @@ async function bootstrap() {
         transformOptions: { enableImplicitConversion: true },
     }));
     app.useGlobalFilters(app.get(all_exceptions_filter_1.AllExceptionsFilter));
-    await app.listen(process.env.PORT ? Number(process.env.PORT) : 3000);
+    const port = Number(process.env.PORT) || 3000;
+    await app.listen(port, '0.0.0.0');
 }
 bootstrap();
 //# sourceMappingURL=main.js.map

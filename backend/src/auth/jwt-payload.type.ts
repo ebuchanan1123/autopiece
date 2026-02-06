@@ -1,7 +1,7 @@
 export type JwtPayload = {
   sub: number;
   email: string;
-  role: 'client' | 'freelancer' | 'admin';
+  role: 'client' | 'seller' | 'admin';
   jti: string;
 };
 

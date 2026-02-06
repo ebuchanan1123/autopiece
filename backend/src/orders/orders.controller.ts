@@ -11,50 +11,40 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { JwtUser } from '../auth/types/jwt-user.type';
 import { OrdersService } from './orders.service';
-import { CreateOrderDto } from './dto/create-order.dto';
-import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
+import { ReserveOrderDto } from './dto/reserve-order.dto';
 
+@UseGuards(JwtAuthGuard)
 @Controller('orders')
 export class OrdersController {
   constructor(private readonly orders: OrdersService) {}
 
-  @UseGuards(JwtAuthGuard)
-  @Post()
-  create(@CurrentUser() user: JwtUser, @Body() dto: CreateOrderDto) {
-    return this.orders.createOrder(user, dto);
+  // customer reserves one or more bags
+  @Post('reserve')
+  reserve(@CurrentUser() user: JwtUser, @Body() dto: ReserveOrderDto) {
+    return this.orders.reserveOrder(user, dto);
   }
 
-  @UseGuards(JwtAuthGuard)
+  // customer orders list
   @Get('me')
   myOrders(@CurrentUser() user: JwtUser) {
     return this.orders.myOrders(user);
   }
 
-  @UseGuards(JwtAuthGuard)
-  @Get('freelancer')
-  freelancerOrders(@CurrentUser() user: JwtUser) {
-    return this.orders.freelancerOrders(user);
+  // seller view: order items reserved/paid for this seller
+  @Get('seller')
+  sellerOrders(@CurrentUser() user: JwtUser) {
+    return this.orders.sellerOrders(user);
   }
 
-  @UseGuards(JwtAuthGuard)
-  @Get(':id')
-  getOne(@CurrentUser() user: JwtUser, @Param('id') id: string) {
-    return this.orders.getOrder(user, +id);
-  }
-
-  @UseGuards(JwtAuthGuard)
+  // cancel order (customer/admin) - you need to implement cancelOrder again in service
   @Post(':id/cancel')
   cancel(@CurrentUser() user: JwtUser, @Param('id') id: string) {
-    return this.orders.cancelOrder(user, +id);
+    return this.orders.cancelOrder(user, Number(id));
   }
 
-  @UseGuards(JwtAuthGuard)
-  @Patch(':id/status')
-  freelancerUpdateStatus(
-    @CurrentUser() user: JwtUser,
-    @Param('id') id: string,
-    @Body() dto: UpdateOrderStatusDto,
-  ) {
-    return this.orders.freelancerUpdateStatus(user, +id, dto.status);
+  // seller marks one bag picked up (by orderItem id)
+  @Patch('items/:itemId/picked-up')
+  pickedUp(@CurrentUser() user: JwtUser, @Param('itemId') itemId: string) {
+    return this.orders.markItemPickedUp(user, Number(itemId));
   }
 }

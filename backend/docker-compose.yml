@@ -4,13 +4,13 @@ services:
         - "5432:5432"
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: autoparts
+      POSTGRES_USER: tgtg
+      POSTGRES_PASSWORD: tgtg-password
+      POSTGRES_DB: tgtg_db
     volumes:
-      - db_data:/var/lib/postgresql/data
+      - tgtg_db_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d autoparts"]
+      test: ["CMD-SHELL", "pg_isready -U tgtg -d tgtg_db"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -19,16 +19,16 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: autopiece_api
+    container_name: tgtg-api
     ports:
       - "127.0.0.1:3002:3000"
     environment:
       NODE_ENV: development
       PORT: 3000
-      DATABASE_URL: postgres://postgres:password@db:5432/autoparts
+      DATABASE_URL: postgres://tgtg:tgtg-password@db:5432/tgtg_db
       DB_SSL: "false"
 
-      JWT_SECRET: a7ec9a328c2eb75d39f8c2f2cf5b3c24440a82f19b7d0db25562fb60d7debec636e0dc79d5963ea072a4c7c18e37ad56
+      JWT_SECRET: a7ec9a328c2eb75d39f8c2f2cf5b3c24440a82f19b7d0db25562fb60d7debec636e0dc79d5963ea072a4c7c18e37ad5674829ab3ebf5f3e1f0f4f6f1e8e9c1
       JWT_EXPIRES_IN: 15m
       JWT_REFRESH_EXPIRES_IN: 30d
 
@@ -46,4 +46,4 @@ services:
     command: sh -c "npm run migration:run:prod && node dist/main.js"
 
 volumes:
-  db_data:
+  tgtg_db_data:
