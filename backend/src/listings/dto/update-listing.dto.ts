@@ -1,4 +1,11 @@
-import { IsInt, IsOptional, IsString, Min, MaxLength, IsIn } from 'class-validator';
+import { IsInt,
+  IsIn,
+  IsOptional,
+  IsString,
+  MaxLength,
+  Min,
+  IsNumber,
+  IsDateString } from 'class-validator';
 import type { ListingStatus } from '../listing.entity';
 import { PartialType } from '@nestjs/mapped-types';
 import { CreateListingDto } from './create-listing.dto';
@@ -6,51 +13,55 @@ import { CreateListingDto } from './create-listing.dto';
 
 
 export class UpdateListingDto extends PartialType(CreateListingDto) {
-  @IsOptional()
   @IsString()
   @MaxLength(120)
-  title?: string;
+  title: string;
 
-  @IsOptional()
   @IsString()
   @MaxLength(5000)
-  description?: string;
-
+  description: string;
+  
+  @IsInt()
+  @Min(0)
+  priceDzd: number;
+  
   @IsOptional()
   @IsInt()
   @Min(0)
-  priceDzd?: number;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(80)
-  category?: string;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(80)
-  make?: string;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(80)
-  model?: string;
-
+  originalValueDzd?: number;
+  
   @IsOptional()
   @IsInt()
-  @Min(1900)
-  year?: number;
-
-
-  @IsOptional()
+  @Min(1)
+  quantityAvailable?: number;
+  
   @IsString()
   @MaxLength(80)
-  wilaya?: string;
-
-  @IsOptional()
+  category: string;
+  
   @IsString()
   @MaxLength(80)
-  city?: string;
+  wilaya: string;
+  
+  @IsString()
+  @MaxLength(80)
+  city: string;
+  
+  @IsOptional()
+  @IsDateString()
+  pickupStartAt?: string;
+  
+  @IsOptional()
+  @IsDateString()
+  pickupEndAt?: string;
+  
+  @IsOptional()
+  @IsNumber()
+  lat?: number;
+  
+  @IsOptional()
+  @IsNumber()
+  lng?: number;
 
   @IsOptional()
   @IsIn(['active', 'sold', 'hidden', 'draft', 'removed'])

@@ -46,9 +46,15 @@ export class OrdersService {
     const customerId = Number(user.sub);
 
     return this.dataSource.transaction(async (manager) => {
-      // Load all listings
       const listingIds = dto.items.map((i) => i.listingId);
-      const listings = await this.listingsService.findByIds(listingIds);
+
+      // Load listings inside the transaction + lock rows to prevent overselling
+      const listings = await manager
+        .getRepository(Listing)
+        .createQueryBuilder('l')
+        .where('l.id IN (:...ids)', { ids: listingIds })
+        .setLock('pessimistic_write')
+        .getMany();
 
       if (listings.length !== listingIds.length) {
         throw new NotFoundException('One or more listings not found');
@@ -90,9 +96,11 @@ export class OrdersService {
         // decrement stock
         listing.quantityAvailable -= item.quantity;
         if (listing.quantityAvailable <= 0) listing.status = 'sold_out';
-        await manager.getRepository(listing.constructor as any).save(listing);
 
-        // create one OrderItem per bag (so each has its own saleNumber)
+        // IMPORTANT: save via Listing repository (not listing.constructor)
+        await manager.getRepository(Listing).save(listing);
+
+        // create one OrderItem per bag (each has its own saleNumber)
         for (let k = 0; k < item.quantity; k++) {
           await manager.getRepository(OrderItem).save(
             manager.getRepository(OrderItem).create({
@@ -103,13 +111,13 @@ export class OrdersService {
               unitPriceDzd: listing.priceDzd,
               saleNumber: this.makeSaleNumber(),
               status: 'reserved',
-              reservedUntil: new Date(Date.now() + 30 * 60 * 1000), // hold 30 minutes
+              reservedUntil: new Date(Date.now() + 30 * 60 * 1000), // 30 min hold
             }),
           );
         }
       }
 
-      // If online, create a payment intent record (you can later plug SATIM)
+      // If online, create a payment intent record (SATIM later)
       if (dto.paymentMethod === 'online') {
         await manager.getRepository(Payment).save(
           manager.getRepository(Payment).create({
@@ -129,6 +137,7 @@ export class OrdersService {
       };
     });
   }
+
 
   async myOrders(user: JwtUser) {
     return this.orderRepo.find({

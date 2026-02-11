@@ -1,6 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { ValidationPipe } from '@nestjs/common';
+import { BadRequestException, ValidationPipe } from '@nestjs/common';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import { Logger } from 'nestjs-pino';
@@ -75,9 +75,15 @@ async function bootstrap() {
       whitelist: true,
       forbidNonWhitelisted: true,
       transform: true,
-      transformOptions: { enableImplicitConversion: true },
-    }),
+      exceptionFactory: (errors) => {
+        const messages = errors.flatMap((e) =>
+          e.constraints ? Object.values(e.constraints) : []
+        );
+        return new BadRequestException(messages.length ? messages : "Invalid request.");
+      },
+    })
   );
+
 
   // What this does:
   // - Ensures errors become safe responses, while logs keep full detail.

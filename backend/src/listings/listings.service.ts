@@ -23,9 +23,19 @@ export class ListingsService {
     }
 
     const listing = this.repo.create({
-      ...dto,
-      sellerId: user.sub,
-      status: dto.status ?? 'active',
+      sellerId: Number(user.sub),
+      title: dto.title,
+      description: dto.description,
+      priceDzd: dto.priceDzd,
+      originalValueDzd: dto.originalValueDzd ?? 0,
+      quantityAvailable: dto.quantityAvailable ?? 1,
+      category: dto.category,
+      wilaya: dto.wilaya,
+      city: dto.city,
+      pickupStartAt: dto.pickupStartAt ? new Date(dto.pickupStartAt) : null,
+      pickupEndAt: dto.pickupEndAt ? new Date(dto.pickupEndAt) : null,
+      lat: dto.lat ?? null,
+      lng: dto.lng ?? null,
     });
 
     return this.repo.save(listing);
@@ -94,3 +104,5 @@ export class ListingsService {
   }
 
 }
+
+//eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjIsImVtYWlsIjoic2VsbGVyMUB0ZXN0LmNvbSIsInJvbGUiOiJzZWxsZXIiLCJqdGkiOiIwOWViMzliYi03N2M3LTQzNmUtYWE1ZS01YzFjNWMxNzQ5NGQiLCJpYXQiOjE3NzA3NDIwNjUsImV4cCI6MTc3MDc0Mjk2NX0.UVdHap3FkdSdvLEj2Kg5eBi9ADIqjJkKDNzm0kN5bwA

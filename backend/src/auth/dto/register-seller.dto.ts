@@ -1,17 +1,19 @@
 import { IsEmail, IsOptional, IsString, Matches, MaxLength, MinLength } from 'class-validator';
 
 export class RegisterSellerDto {
-  @IsEmail()
+  @IsEmail({}, { message: "Enter a valid email address." })
   @MaxLength(254)
   email: string;
 
+
   @IsString()
-  @MinLength(10)
+  @MinLength(6, { message: "Password must be at least 6 characters." })
   @MaxLength(72)
   @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/, {
-    message: 'Password must contain at least 1 uppercase, 1 lowercase, and 1 number',
+    message: "Password must include an uppercase letter, a lowercase letter, and a number.",
   })
   password: string;
+
 
   @IsOptional()
   @IsString()
@@ -22,4 +24,16 @@ export class RegisterSellerDto {
   @IsString()
   @MaxLength(120)
   storeName?: string;
+
+  @IsString()
+  @MaxLength(255)
+  address: string;
+
+  @IsString()
+  @MaxLength(100)
+  city: string;
+
+  @IsString()
+  @MaxLength(100)
+  wilaya: string;
 }
