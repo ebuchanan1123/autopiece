@@ -1,23 +1,32 @@
-import { Tabs } from "expo-router";
+import { Stack } from "expo-router";
 
-export default function AppTabsLayout() {
+export default function AppLayout() {
   return (
-    <Tabs screenOptions={{ headerShown: true }}>
-      <Tabs.Screen name="discover" options={{ title: "Discover" }} />
-      <Tabs.Screen name="browse" options={{ title: "Browse" }} />
-      <Tabs.Screen name="favourites" options={{ title: "Favourites" }} />
-      <Tabs.Screen name="profile" options={{ title: "Profile" }} />
+    <Stack
+      screenOptions={{
+        headerBackTitle: "Back",
+      }}
+    >
+      {/* Tabs live here */}
+      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
 
-
-
-      {/* Hidden routes (accessible via router.push) */}
-      <Tabs.Screen name="account-details" options={{ href: null, title: "Account details" }} />
-      <Tabs.Screen name="notifications" options={{ href: null, title: "Notifications" }} />
-      <Tabs.Screen name="help" options={{ href: null, title: "Help" }} />
-      <Tabs.Screen name="legal" options={{ href: null, title: "Legal" }} />
-      <Tabs.Screen name="hidden-stores" options={{ href: null, title: "Hidden stores" }} />
-      <Tabs.Screen name="invite-friends" options={{ href: null, title: "Invite friends" }} />
-      <Tabs.Screen name="recommend-store" options={{ href: null, title: "Recommend a store" }} />
-    </Tabs>
+      {/* These are stack pages (NOT tabs) */}
+      <Stack.Screen name="discover-section" options={{ headerShown: false }} />
+      <Stack.Screen name="seller-dashboard" options={{ headerShown: false }} />
+      <Stack.Screen name="seller-settings" options={{ headerShown: false }} />
+      <Stack.Screen name="seller-listings" options={{ headerShown: false }} />
+      <Stack.Screen name="seller-listing-new" options={{ headerShown: false }} />
+      <Stack.Screen name="seller-listing-edit/[id]" options={{ headerShown: false }} />
+      <Stack.Screen name="listing/[id]" options={{ title: "Details", headerShown: false }} />
+      <Stack.Screen name="checkout/[id]" options={{ headerShown: false }} />
+      <Stack.Screen name="orders" options={{ title: "My orders" }} />
+      <Stack.Screen name="order/[id]" options={{ title: "Order details" }} />
+      <Stack.Screen name="account-details" options={{ headerShown: false }} />
+      <Stack.Screen name="payment-cards" options={{ headerShown: false }} />
+      <Stack.Screen name="notifications" options={{ headerShown: false }} />
+      <Stack.Screen name="help" options={{ headerShown: false }} />
+      <Stack.Screen name="legal" options={{ headerShown: false }} />
+      <Stack.Screen name="preferences" options={{ headerShown: false }} />
+    </Stack>
   );
 }

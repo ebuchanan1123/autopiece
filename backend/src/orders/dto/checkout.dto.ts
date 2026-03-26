@@ -1,5 +1,13 @@
-import { IsArray, IsIn, IsInt, IsPositive, IsString, MaxLength, ValidateNested } from 'class-validator';
-import { Type } from 'class-transformer';
+import {
+  IsArray,
+  IsIn,
+  IsInt,
+  IsPositive,
+  IsString,
+  MaxLength,
+  ValidateNested,
+} from "class-validator";
+import { Type } from "class-transformer";
 
 class CheckoutItemDto {
   @IsInt()
@@ -17,8 +25,8 @@ export class CheckoutDto {
   @Type(() => CheckoutItemDto)
   items: CheckoutItemDto[];
 
-  @IsIn(['online', 'cod'])
-  paymentMethod: 'online' | 'cod';
+  @IsIn(["online", "cod"])
+  paymentMethod: "online" | "cod";
 
   @IsString()
   @MaxLength(120)

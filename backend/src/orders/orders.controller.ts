@@ -6,45 +6,65 @@ import {
   Patch,
   Post,
   UseGuards,
-} from '@nestjs/common';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import type { JwtUser } from '../auth/types/jwt-user.type';
-import { OrdersService } from './orders.service';
-import { ReserveOrderDto } from './dto/reserve-order.dto';
+} from "@nestjs/common";
+import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
+import { CurrentUser } from "../auth/decorators/current-user.decorator";
+import type { JwtUser } from "../auth/types/jwt-user.type";
+import { OrdersService } from "./orders.service";
+import { ReserveOrderDto } from "./dto/reserve-order.dto";
+import { CreateOrderReviewDto } from "./dto/create-order-review.dto";
 
 @UseGuards(JwtAuthGuard)
-@Controller('orders')
+@Controller("orders")
 export class OrdersController {
   constructor(private readonly orders: OrdersService) {}
 
   // customer reserves one or more bags
-  @Post('reserve')
+  @Post("reserve")
   reserve(@CurrentUser() user: JwtUser, @Body() dto: ReserveOrderDto) {
     return this.orders.reserveOrder(user, dto);
   }
 
+  @Get("me/items")
+  myOrderItems(@CurrentUser() user: JwtUser) {
+    return this.orders.myOrderItems(user);
+  }
+
   // customer orders list
-  @Get('me')
+  @Get("me")
   myOrders(@CurrentUser() user: JwtUser) {
     return this.orders.myOrders(user);
   }
 
   // seller view: order items reserved/paid for this seller
-  @Get('seller')
+  @Get("seller")
   sellerOrders(@CurrentUser() user: JwtUser) {
     return this.orders.sellerOrders(user);
   }
 
+  @Get(":id")
+  getOne(@CurrentUser() user: JwtUser, @Param("id") id: string) {
+    return this.orders.getOrderDetails(user, Number(id));
+  }
+
   // cancel order (customer/admin) - you need to implement cancelOrder again in service
-  @Post(':id/cancel')
-  cancel(@CurrentUser() user: JwtUser, @Param('id') id: string) {
+  @Post(":id/cancel")
+  cancel(@CurrentUser() user: JwtUser, @Param("id") id: string) {
     return this.orders.cancelOrder(user, Number(id));
   }
 
   // seller marks one bag picked up (by orderItem id)
-  @Patch('items/:itemId/picked-up')
-  pickedUp(@CurrentUser() user: JwtUser, @Param('itemId') itemId: string) {
+  @Patch("items/:itemId/picked-up")
+  pickedUp(@CurrentUser() user: JwtUser, @Param("itemId") itemId: string) {
     return this.orders.markItemPickedUp(user, Number(itemId));
+  }
+
+  @Post("items/:itemId/review")
+  review(
+    @CurrentUser() user: JwtUser,
+    @Param("itemId") itemId: string,
+    @Body() dto: CreateOrderReviewDto,
+  ) {
+    return this.orders.submitItemReview(user, Number(itemId), dto);
   }
 }

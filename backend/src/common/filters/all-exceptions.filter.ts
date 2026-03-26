@@ -5,9 +5,9 @@ import {
   HttpException,
   HttpStatus,
   Injectable,
-} from '@nestjs/common';
-import type { Request, Response } from 'express';
-import { PinoLogger } from 'nestjs-pino';
+} from "@nestjs/common";
+import type { Request, Response } from "express";
+import { PinoLogger } from "nestjs-pino";
 
 @Injectable()
 @Catch()
@@ -29,14 +29,14 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     const responseBody = isHttp
       ? exception.getResponse()
-      : { message: 'Internal server error' };
+      : { message: "Internal server error" };
 
     // HttpException.getResponse() can be string | object | array
     const message = (() => {
-      if (typeof responseBody === 'string') return responseBody;
+      if (typeof responseBody === "string") return responseBody;
       const m = (responseBody as any)?.message;
-      if (Array.isArray(m)) return m.join(', ');
-      return m ?? 'Internal server error';
+      if (Array.isArray(m)) return m.join(", ");
+      return m ?? "Internal server error";
     })();
 
     this.logger.error(
@@ -46,7 +46,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
         method: req.method,
         path: req.originalUrl ?? req.url,
       },
-      'Unhandled exception',
+      "Unhandled exception",
     );
 
     res.status(status).json({

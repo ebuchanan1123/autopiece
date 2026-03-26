@@ -3,7 +3,7 @@ import {
   ExecutionContext,
   ForbiddenException,
   Injectable,
-} from '@nestjs/common';
+} from "@nestjs/common";
 
 @Injectable()
 export class RolesGuard implements CanActivate {
@@ -14,7 +14,7 @@ export class RolesGuard implements CanActivate {
     const user = req.user;
 
     if (!user || !this.allowed.includes(user.role)) {
-      throw new ForbiddenException('Insufficient permissions');
+      throw new ForbiddenException("Insufficient permissions");
     }
     return true;
   }

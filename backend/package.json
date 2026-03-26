@@ -38,12 +38,14 @@
     "@nestjs/platform-express": "^11.1.9",
     "@nestjs/throttler": "^6.5.0",
     "@nestjs/typeorm": "^11.0.0",
+    "@react-native-community/slider": "5.0.1",
     "argon2": "^0.44.0",
     "bcrypt": "^6.0.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.3",
     "cookie-parser": "^1.4.7",
     "dotenv": "^17.2.3",
+    "expo": "^54.0.33",
     "helmet": "^8.1.0",
     "nestjs-pino": "^4.5.0",
     "passport": "^0.7.0",
@@ -52,7 +54,6 @@
     "pino-http": "^11.0.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
-    "typeorm": "^0.3.28",
     "zod": "^4.2.1"
   },
   "devDependencies": {
@@ -81,6 +82,7 @@
     "ts-loader": "^9.5.2",
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
+    "typeorm": "^0.3.28",
     "typescript": "^5.7.3",
     "typescript-eslint": "^8.20.0"
   },

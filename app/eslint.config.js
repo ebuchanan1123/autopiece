@@ -5,6 +5,9 @@ const expoConfig = require('eslint-config-expo/flat');
 module.exports = defineConfig([
   expoConfig,
   {
-    ignores: ['dist/*'],
+    ignores: ['.expo/**', 'dist/*'],
+    rules: {
+      'react/display-name': 'off',
+    },
   },
 ]);

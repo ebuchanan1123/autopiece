@@ -1,50 +1,51 @@
-# Welcome to your Expo app 👋
+# Too Good To Go DZ App
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Expo/React Native mobile app for a food-saving marketplace where users can find discounted surplus food from local businesses.
 
-## Get started
+## Focus
 
-1. Install dependencies
+This app is the main product surface in this repo.
 
-   ```bash
-   npm install
-   ```
+Current areas in the app include:
 
-2. Start the app
+- client auth
+- discovery and browse flows
+- map-based listing search
+- favourites
+- listing details and reservations
+- orders and account/profile screens
+- app language preferences
 
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## Run The App
 
 ```bash
-npm run reset-project
+npm install
+npm start
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Helpful commands:
 
-## Learn more
+```bash
+npm run ios
+npm run android
+npm run web
+npm run lint
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+## API Configuration
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+The app reads the backend URL from `EXPO_PUBLIC_API_URL`.
 
-## Join the community
+If that variable is not set, the app falls back to the Expo host IP and port `3002`.
 
-Join our community of developers creating universal apps.
+## App Structure
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+- `app/app`: Expo Router screens
+- `app/src/features`: feature-level API and state code
+- `app/src/components`: shared app-specific UI
+- `app/src/lib`: lower-level API and token helpers
+
+## Notes
+
+- The legacy Expo starter files have been removed to keep the app focused on the current product.
+- The unused `web` prototype has also been removed from the repo.

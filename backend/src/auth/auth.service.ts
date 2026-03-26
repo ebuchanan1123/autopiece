@@ -2,23 +2,23 @@ import {
   BadRequestException,
   Injectable,
   UnauthorizedException,
-} from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
-import { ConfigService } from '@nestjs/config';
-import * as bcrypt from 'bcrypt';
-import { InjectRepository } from '@nestjs/typeorm';
-import { IsNull, Repository } from 'typeorm';
-import { randomBytes, randomUUID, createHmac } from 'crypto';
-import * as argon2 from 'argon2';
-import { JwtSignOptions } from '@nestjs/jwt';
+} from "@nestjs/common";
+import { JwtService } from "@nestjs/jwt";
+import { ConfigService } from "@nestjs/config";
+import * as bcrypt from "bcrypt";
+import { InjectRepository } from "@nestjs/typeorm";
+import { IsNull, Repository } from "typeorm";
+import { randomBytes, randomUUID, createHmac } from "crypto";
+import * as argon2 from "argon2";
+import { JwtSignOptions } from "@nestjs/jwt";
 
-
-import { UsersService } from '../users/users.service';
-import { User } from '../users/user.entity';
-import { RegisterClientDto } from './dto/register-client.dto';
-import { RegisterSellerDto } from './dto/register-seller.dto';
-import { LoginDto } from './dto/login.dto';
-import { RefreshSession } from './refresh-session.entity';
+import { UsersService } from "../users/users.service";
+import { SellersService } from "../sellers/sellers.service";
+import { User } from "../users/user.entity";
+import { RegisterClientDto } from "./dto/register-client.dto";
+import { RegisterSellerDto } from "./dto/register-seller.dto";
+import { LoginDto } from "./dto/login.dto";
+import { RefreshSession } from "./refresh-session.entity";
 
 type SessionMeta = {
   ip?: string;
@@ -40,6 +40,7 @@ export class AuthService {
 
   constructor(
     private readonly usersService: UsersService,
+    private readonly sellersService: SellersService,
     private readonly jwtService: JwtService,
     private readonly config: ConfigService,
     @InjectRepository(RefreshSession)
@@ -50,28 +51,15 @@ export class AuthService {
     return email.trim().toLowerCase();
   }
 
-  /**
-   * What this does:
-   *  - Removes secrets + internal security state from API responses.
-   * Why it matters:
-   *  - Prevents leaking brute-force/lockout state and password hash.
-   */
-  private toSafeUser(user: User) {
-    const {
-      passwordHash,
-      failedLoginCount,
-      lastFailedLoginAt,
-      lockUntil,
-      ...safe
-    } = user as any;
-
-    return safe;
+  private normalizeUsername(username: string) {
+    return username.trim().replace(/\s+/g, " ").slice(0, 40);
   }
 
-    private signAccessToken(user: User) {
+  private signAccessToken(user: User) {
     const expiresIn =
-      (this.config.get<string>('JWT_EXPIRES_IN') as JwtSignOptions['expiresIn']) ??
-      '15m';
+      (this.config.get<string>(
+        "JWT_EXPIRES_IN",
+      ) as JwtSignOptions["expiresIn"]) ?? "15m";
 
     const payload = {
       sub: user.id,
@@ -83,21 +71,22 @@ export class AuthService {
     return this.jwtService.sign(payload, { expiresIn });
   }
 
-
   private fingerprintHash(value: string): string {
-    const secret = this.config.get<string>('SESSION_FINGERPRINT_SECRET');
+    const secret = this.config.get<string>("SESSION_FINGERPRINT_SECRET");
     if (!secret || secret.length < 32) {
-      throw new Error('SESSION_FINGERPRINT_SECRET must be at least 32 characters');
+      throw new Error(
+        "SESSION_FINGERPRINT_SECRET must be at least 32 characters",
+      );
     }
-    return createHmac('sha256', secret).update(value).digest('hex');
+    return createHmac("sha256", secret).update(value).digest("hex");
   }
 
   private normalizeUserAgent(ua: string | undefined): string {
-    return (ua ?? '').trim().slice(0, 512);
+    return (ua ?? "").trim().slice(0, 512);
   }
 
   private normalizeIp(ip: string | undefined): string {
-    return (ip ?? '').trim();
+    return (ip ?? "").trim();
   }
 
   private parseTtlToMs(ttl: string, fallbackMs: number) {
@@ -107,10 +96,10 @@ export class AuthService {
     const value = Number(m[1]);
     const unit = m[2];
 
-    if (unit === 's') return value * 1000;
-    if (unit === 'm') return value * 60_000;
-    if (unit === 'h') return value * 60 * 60_000;
-    if (unit === 'd') return value * 24 * 60 * 60_000;
+    if (unit === "s") return value * 1000;
+    if (unit === "m") return value * 60_000;
+    if (unit === "h") return value * 60 * 60_000;
+    if (unit === "d") return value * 24 * 60 * 60_000;
 
     return fallbackMs;
   }
@@ -121,9 +110,9 @@ export class AuthService {
   }
 
   private parseRefreshCookieValue(value: string) {
-    if (!value || !value.startsWith('rt_')) return null;
+    if (!value || !value.startsWith("rt_")) return null;
     const rest = value.slice(3);
-    const dot = rest.indexOf('.');
+    const dot = rest.indexOf(".");
     if (dot <= 0) return null;
 
     const tokenId = rest.slice(0, dot);
@@ -135,12 +124,15 @@ export class AuthService {
 
   private async createRefreshSession(user: User, meta?: SessionMeta) {
     const tokenId = randomUUID();
-    const secret = randomBytes(32).toString('base64url');
+    const secret = randomBytes(32).toString("base64url");
 
     // Refresh-session secret hashing (bcrypt is fine here)
-    const secretHash = await bcrypt.hash(secret, this.REFRESH_SECRET_HASH_ROUNDS);
+    const secretHash = await bcrypt.hash(
+      secret,
+      this.REFRESH_SECRET_HASH_ROUNDS,
+    );
 
-    const ttl = this.config.get<string>('JWT_REFRESH_EXPIRES_IN') ?? '30d';
+    const ttl = this.config.get<string>("JWT_REFRESH_EXPIRES_IN") ?? "30d";
     const ms = this.parseTtlToMs(ttl, 30 * 24 * 60 * 60_000);
     const expiresAt = new Date(Date.now() + ms);
 
@@ -170,12 +162,12 @@ export class AuthService {
 
   private isBcryptHash(hash: string): boolean {
     // bcrypt hashes typically start with $2a$, $2b$, or $2y$
-    return typeof hash === 'string' && /^\$2[aby]\$/.test(hash);
+    return typeof hash === "string" && /^\$2[aby]\$/.test(hash);
   }
 
   private isArgon2Hash(hash: string): boolean {
     // argon2 hashes start with $argon2id$ / $argon2i$ / $argon2d$
-    return typeof hash === 'string' && /^\$argon2(id|i|d)\$/.test(hash);
+    return typeof hash === "string" && /^\$argon2(id|i|d)\$/.test(hash);
   }
 
   private async hashPasswordArgon2(password: string): Promise<string> {
@@ -224,58 +216,83 @@ export class AuthService {
     const email = this.normalizeEmail(dto.email);
 
     const existing = await this.usersService.findByEmail(email);
-    if (existing) throw new BadRequestException('Email is already in use');
+    if (existing) throw new BadRequestException("Email is already in use");
 
     const passwordHash = await this.hashPasswordArgon2(dto.password);
 
     const user = await this.usersService.createUser({
+      username: this.normalizeUsername(dto.username),
       email,
       passwordHash,
-      role: 'client',
+      role: "client",
       phone: dto.phone,
     });
 
     const accessToken = this.signAccessToken(user);
     const { refreshCookieValue } = await this.createRefreshSession(user, meta);
 
-    return { user: this.toSafeUser(user), accessToken, refreshCookieValue };
+    return {
+      user: this.usersService.toSafeUser(user),
+      accessToken,
+      refreshCookieValue,
+    };
   }
 
   async registerSeller(dto: RegisterSellerDto, meta?: SessionMeta) {
     const email = this.normalizeEmail(dto.email);
 
     const existing = await this.usersService.findByEmail(email);
-    if (existing) throw new BadRequestException('Email is already in use');
+    if (existing) throw new BadRequestException("Email is already in use");
 
     const passwordHash = await this.hashPasswordArgon2(dto.password);
 
     const user = await this.usersService.createUser({
+      username: this.normalizeUsername(
+        dto.username?.trim() || dto.storeName?.trim() || email.split("@")[0],
+      ),
       email,
       passwordHash,
-      role: 'seller',
+      role: "seller",
       phone: dto.phone,
+    });
+
+    await this.sellersService.createProfile({
+      userId: user.id,
+      storeName: dto.storeName?.trim() || user.username,
+      address: dto.address,
+      city: dto.city,
+      wilaya: dto.wilaya,
+      phone: dto.phone?.trim() || "",
+      businessType: (dto as any).businessType ?? null,
+      placeId: (dto as any).placeId ?? null,
+      lat: (dto as any).lat ?? null,
+      lng: (dto as any).lng ?? null,
     });
 
     const accessToken = this.signAccessToken(user);
     const { refreshCookieValue } = await this.createRefreshSession(user, meta);
 
-    return { user: this.toSafeUser(user), accessToken, refreshCookieValue };
+    return {
+      user: this.usersService.toSafeUser(user),
+      accessToken,
+      refreshCookieValue,
+    };
   }
 
   async login(dto: LoginDto, meta?: SessionMeta) {
     const email = this.normalizeEmail(dto.email);
 
     const user = await this.usersService.findByEmail(email);
-    if (!user) throw new UnauthorizedException('Invalid email or password');
+    if (!user) throw new UnauthorizedException("Invalid email or password");
 
     if (this.usersService.isLocked(user)) {
-      throw new UnauthorizedException('Too many attempts. Try again later.');
+      throw new UnauthorizedException("Too many attempts. Try again later.");
     }
 
     const ok = await this.verifyAndMaybeUpgradePassword(user, dto.password);
     if (!ok) {
       await this.usersService.recordFailedLogin(user.id);
-      throw new UnauthorizedException('Invalid email or password');
+      throw new UnauthorizedException("Invalid email or password");
     }
 
     await this.usersService.resetLoginFailures(user.id);
@@ -283,17 +300,21 @@ export class AuthService {
     const accessToken = this.signAccessToken(user);
     const { refreshCookieValue } = await this.createRefreshSession(user, meta);
 
-    return { user: this.toSafeUser(user), accessToken, refreshCookieValue };
+    return {
+      user: this.usersService.toSafeUser(user),
+      accessToken,
+      refreshCookieValue,
+    };
   }
 
   async rotateRefreshSession(refreshCookieValue: string, meta?: SessionMeta) {
     const parsed = this.parseRefreshCookieValue(refreshCookieValue);
-    if (!parsed) throw new UnauthorizedException('Invalid refresh token');
+    if (!parsed) throw new UnauthorizedException("Invalid refresh token");
 
     const { tokenId, secret } = parsed;
 
     const session = await this.refreshRepo.findOne({ where: { tokenId } });
-    if (!session) throw new UnauthorizedException('Invalid refresh token');
+    if (!session) throw new UnauthorizedException("Invalid refresh token");
 
     if (session.revokedAt) {
       if (session.replacedByTokenId) {
@@ -301,21 +322,22 @@ export class AuthService {
           { userId: session.userId, revokedAt: IsNull() },
           { revokedAt: new Date() },
         );
-        throw new UnauthorizedException('Refresh token reuse detected');
+        throw new UnauthorizedException("Refresh token reuse detected");
       }
-      throw new UnauthorizedException('Invalid refresh token');
+      throw new UnauthorizedException("Invalid refresh token");
     }
 
     if (session.expiresAt.getTime() < Date.now()) {
-      throw new UnauthorizedException('Refresh token expired');
+      throw new UnauthorizedException("Refresh token expired");
     }
 
     const ok = await bcrypt.compare(secret, session.secretHash);
-    if (!ok) throw new UnauthorizedException('Invalid refresh token');
+    if (!ok) throw new UnauthorizedException("Invalid refresh token");
 
     // Optional strict fingerprint enforcement
     const strict =
-      (this.config.get<string>('SESSION_FINGERPRINT_STRICT') ?? 'false') === 'true';
+      (this.config.get<string>("SESSION_FINGERPRINT_STRICT") ?? "false") ===
+      "true";
 
     if (strict) {
       const ip = this.normalizeIp(meta?.ip);
@@ -324,8 +346,7 @@ export class AuthService {
       const ipHash = ip ? this.fingerprintHash(ip) : null;
       const uaHash = ua ? this.fingerprintHash(ua) : null;
 
-      const ipMismatch =
-        session.ipHash && ipHash && session.ipHash !== ipHash;
+      const ipMismatch = session.ipHash && ipHash && session.ipHash !== ipHash;
       const uaMismatch =
         session.userAgentHash && uaHash && session.userAgentHash !== uaHash;
 
@@ -334,12 +355,12 @@ export class AuthService {
           { userId: session.userId, revokedAt: IsNull() },
           { revokedAt: new Date() },
         );
-        throw new UnauthorizedException('Refresh token reuse detected');
+        throw new UnauthorizedException("Refresh token reuse detected");
       }
     }
 
     const user = await this.usersService.findById(session.userId);
-    if (!user) throw new UnauthorizedException('User not found');
+    if (!user) throw new UnauthorizedException("User not found");
 
     // Create new session (rotation)
     const { refreshCookieValue: newRefreshCookieValue } =
@@ -385,7 +406,7 @@ export class AuthService {
   async listSessions(userId: number) {
     const sessions = await this.refreshRepo.find({
       where: { userId, revokedAt: IsNull() },
-      order: { lastUsedAt: 'DESC' as any, createdAt: 'DESC' as any },
+      order: { lastUsedAt: "DESC" as any, createdAt: "DESC" as any },
     });
 
     return sessions.map((s) => ({
@@ -397,7 +418,9 @@ export class AuthService {
   }
 
   async revokeSession(userId: number, tokenId: string) {
-    const session = await this.refreshRepo.findOne({ where: { userId, tokenId } });
+    const session = await this.refreshRepo.findOne({
+      where: { userId, tokenId },
+    });
     if (!session || session.revokedAt) return { ok: true };
 
     session.revokedAt = new Date();
