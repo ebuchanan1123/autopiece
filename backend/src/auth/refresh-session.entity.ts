@@ -5,15 +5,15 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   Index,
-} from 'typeorm';
+} from "typeorm";
 
 @Entity()
-@Index(['userId', 'revokedAt'])
+@Index(["userId", "revokedAt"])
 export class RefreshSession {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ type: 'uuid', unique: true })
+  @Column({ type: "uuid", unique: true })
   tokenId: string;
 
   @Column()
@@ -22,25 +22,25 @@ export class RefreshSession {
   @Column()
   secretHash: string;
 
-  @Column({ type: 'timestamp' })
+  @Column({ type: "timestamp" })
   expiresAt: Date;
 
-  @Column({ type: 'timestamp', nullable: true })
+  @Column({ type: "timestamp", nullable: true })
   revokedAt: Date | null;
 
-  @Column({ type: 'varchar', length: 36, nullable: true })
+  @Column({ type: "varchar", length: 36, nullable: true })
   replacedByTokenId: string | null;
 
-  @Column({ type: 'varchar', length: 64, nullable: true })
+  @Column({ type: "varchar", length: 64, nullable: true })
   userAgentHash: string | null;
 
-  @Column({ type: 'varchar', length: 64, nullable: true })
+  @Column({ type: "varchar", length: 64, nullable: true })
   ipHash: string | null;
 
   @CreateDateColumn()
   createdAt: Date;
 
-  @Column({ type: 'timestamp', nullable: true })
+  @Column({ type: "timestamp", nullable: true })
   lastUsedAt: Date | null;
 
   @UpdateDateColumn()

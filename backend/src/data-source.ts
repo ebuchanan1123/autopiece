@@ -1,9 +1,9 @@
-import 'reflect-metadata';
-import * as dotenv from 'dotenv';
-import { DataSource } from 'typeorm';
-import { loadEnv } from './config/env';
+import "reflect-metadata";
+import * as dotenv from "dotenv";
+import { DataSource } from "typeorm";
+import { loadEnv } from "./config/env";
 
-if (process.env.NODE_ENV !== 'production') {
+if (process.env.NODE_ENV !== "production") {
   dotenv.config();
 }
 
@@ -14,10 +14,12 @@ const databaseUrl =
   `postgres://${encodeURIComponent(env.DB_USER)}:${encodeURIComponent(env.DB_PASSWORD)}@${env.DB_HOST}:${env.DB_PORT}/${env.DB_NAME}`;
 
 export default new DataSource({
-  type: 'postgres',
+  type: "postgres",
   url: databaseUrl,
-  ssl: env.DB_SSL  ? { rejectUnauthorized: false } : false,
-  entities: [__dirname + '/**/*.entity{.ts,.js}'],
-  migrations: [__dirname + '/migrations/*{.ts,.js}'],
+  ssl: env.DB_SSL
+    ? { rejectUnauthorized: env.DB_SSL_REJECT_UNAUTHORIZED }
+    : false,
+  entities: [__dirname + "/**/*.entity{.ts,.js}"],
+  migrations: [__dirname + "/migrations/*{.ts,.js}"],
   synchronize: false,
 });

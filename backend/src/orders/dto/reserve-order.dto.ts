@@ -1,5 +1,14 @@
-import { IsIn, IsInt, IsArray, ValidateNested, Min } from 'class-validator';
-import { Type } from 'class-transformer';
+import {
+  IsArray,
+  IsIn,
+  IsInt,
+  IsOptional,
+  IsString,
+  MaxLength,
+  Min,
+  ValidateNested,
+} from "class-validator";
+import { Type } from "class-transformer";
 
 class ReserveItemDto {
   @IsInt()
@@ -16,6 +25,15 @@ export class ReserveOrderDto {
   @Type(() => ReserveItemDto)
   items: ReserveItemDto[];
 
-  @IsIn(['online', 'in_store'])
-  paymentMethod: 'online' | 'in_store';
+  @IsIn(["online", "in_store"])
+  paymentMethod: "online" | "in_store";
+
+  @IsOptional()
+  @IsIn(["saved_card"])
+  paymentProvider?: "saved_card";
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(4)
+  paymentCardLast4?: string;
 }

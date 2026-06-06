@@ -1,35 +1,44 @@
-import { Module } from '@nestjs/common';
-import { JwtModule } from '@nestjs/jwt';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { PassportModule } from '@nestjs/passport';
+import { Module } from "@nestjs/common";
+import { JwtModule } from "@nestjs/jwt";
+import { TypeOrmModule } from "@nestjs/typeorm";
+import { ConfigModule, ConfigService } from "@nestjs/config";
+import { PassportModule } from "@nestjs/passport";
 
-import type { StringValue } from 'ms';
+import type { StringValue } from "ms";
 
-import { AuthController } from './auth.controller';
-import { AuthService } from './auth.service';
+import { AuthController } from "./auth.controller";
+import { AuthService } from "./auth.service";
 
-import { UsersModule } from '../users/users.module';
-import { JwtStrategy } from './jwt.strategy';
-import { RefreshSession } from './refresh-session.entity';
+import { UsersModule } from "../users/users.module";
+import { SellersModule } from "../sellers/sellers.module";
+import { JwtStrategy } from "./jwt.strategy";
+import { RefreshSession } from "./refresh-session.entity";
 
 @Module({
   imports: [
     ConfigModule,
     UsersModule,
+    SellersModule,
     TypeOrmModule.forFeature([RefreshSession]),
 
     JwtModule.registerAsync({
-      imports: [PassportModule,
-                JwtModule.register({ /* ... */ }), 
-                TypeOrmModule.forFeature([/* ... */]), 
-                ConfigModule],
+      imports: [
+        PassportModule,
+        JwtModule.register({
+          /* ... */
+        }),
+        TypeOrmModule.forFeature([
+          /* ... */
+        ]),
+        ConfigModule,
+      ],
       inject: [ConfigService],
       useFactory: (config: ConfigService) => {
-        const expiresIn = (config.get<string>('JWT_EXPIRES_IN') ?? '15m') as StringValue;
+        const expiresIn = (config.get<string>("JWT_EXPIRES_IN") ??
+          "15m") as StringValue;
 
         return {
-          secret: config.getOrThrow<string>('JWT_SECRET'),
+          secret: config.getOrThrow<string>("JWT_SECRET"),
           signOptions: { expiresIn },
         };
       },

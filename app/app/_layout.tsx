@@ -1,14 +1,16 @@
 import { Stack } from "expo-router";
 import { MenuProvider } from "react-native-popup-menu";
+import { LangProvider } from "@/src/features/i18n/lang.context";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 
 export default function RootLayout() {
   return (
-    <MenuProvider>
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="(auth)" />
-        <Stack.Screen name="(app)" />
-        <Stack.Screen name="modal" options={{ presentation: "modal" }} />
-      </Stack>
-    </MenuProvider>
+    <LangProvider>
+      <SafeAreaProvider>
+        <MenuProvider>
+          <Stack screenOptions={{ headerShown: false }} />
+        </MenuProvider>
+      </SafeAreaProvider>
+    </LangProvider>
   );
 }

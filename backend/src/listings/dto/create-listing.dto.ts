@@ -6,7 +6,20 @@ import {
   Min,
   IsNumber,
   IsDateString,
-} from 'class-validator';
+  IsArray,
+  ValidateNested,
+} from "class-validator";
+import { Type } from "class-transformer";
+
+class PackagingItemDto {
+  @IsString()
+  @MaxLength(80)
+  label: string;
+
+  @IsString()
+  @MaxLength(80)
+  status: string;
+}
 
 export class CreateListingDto {
   @IsString()
@@ -58,4 +71,39 @@ export class CreateListingDto {
   @IsOptional()
   @IsNumber()
   lng?: number;
+
+  /**
+   * NEW optional fields (rich listing page)
+   */
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(700000)
+  imageUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(300)
+  address?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  pickupInstructions?: string;
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => PackagingItemDto)
+  packaging?: PackagingItemDto[];
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(400)
+  packagingNote?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(4000)
+  ingredientsAndAllergens?: string;
 }
