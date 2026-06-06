@@ -47,7 +47,14 @@ export default function LoginScreen() {
       setLoading(true);
       setError(null);
       const auth = await login(e, password);
-      router.replace(auth.user.role === "seller" ? "/(app)/seller-dashboard" : "/(app)/(tabs)/discover");
+      const nextRoute =
+        auth.user.role === "admin"
+          ? "/(app)/admin-dashboard"
+          : auth.user.role === "seller"
+            ? "/(app)/seller-dashboard"
+            : "/(app)/(tabs)/discover";
+
+      router.replace(nextRoute as never);
     } catch (err: any) {
       setError(err?.message ?? "Login failed");
     } finally {

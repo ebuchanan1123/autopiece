@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Pressable, Alert, ScrollView, Modal, Image } fr
 import { router } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
 import { clearToken } from "@/src/lib/token";
+import { unregisterStoredPushTokenFromServer } from "@/src/features/notifications/push";
 import { ScreenBody } from "@/src/components/screen-body";
 import { useLang } from "@/src/features/i18n/lang.context";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -12,7 +13,7 @@ import {
   getTotalBags,
   getTotalSavedDzd,
   type OrderSummary,
-} from "@/src/features/reservations/order-summary";
+} from "@/src/features/orders/order-summary";
 import { getProfileSettings, type ProfileSettings } from "@/src/features/profile/profile.store";
 import { getMyProfile } from "@/src/features/profile/profile.api";
 
@@ -91,6 +92,15 @@ export default function ProfileScreen() {
     {
       title: t("profile.settings"),
       items: [
+        ...(profile?.role === "admin"
+          ? [
+              {
+                icon: "shield-checkmark-outline" as const,
+                label: "Admin console",
+                onPress: () => router.push("/(app)/admin-dashboard" as never),
+              },
+            ]
+          : []),
         { icon: "person-circle-outline" as const, label: t("profile.accountDetails"), onPress: () => router.push("/(app)/account-details") },
         { icon: "card-outline" as const, label: t("profile.paymentCards"), onPress: () => router.push("/(app)/payment-cards") },
         { icon: "notifications-outline" as const, label: t("profile.notifications"), onPress: () => router.push("/(app)/notifications") },
@@ -235,6 +245,7 @@ export default function ProfileScreen() {
                       text: t("profile.logout"),
                       style: "destructive",
                       onPress: async () => {
+                        await unregisterStoredPushTokenFromServer();
                         await clearToken();
                         router.replace("/(auth)/login");
                       },

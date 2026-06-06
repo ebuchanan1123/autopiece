@@ -46,13 +46,25 @@ export default function SellerListingsScreen() {
 
   const activeCount = useMemo(() => items.filter((item) => item.status === "active").length, [items]);
   const soldOutCount = useMemo(() => items.filter((item) => item.status === "sold_out").length, [items]);
+  const pausedCount = useMemo(() => items.filter((item) => item.status === "hidden").length, [items]);
 
-  async function markSoldOut(item: Listing) {
+  async function pauseListing(item: Listing) {
     try {
-      await updateListing(item.id, { status: "sold_out", quantityAvailable: 0 });
+      await updateListing(item.id, { status: "hidden" });
       await load();
     } catch (e: any) {
-      Alert.alert("Could not mark listing sold out", e?.message ?? "Please try again.");
+      Alert.alert("Could not pause listing", e?.message ?? "Please try again.");
+    }
+  }
+
+  async function resumeListing(item: Listing) {
+    try {
+      await updateListing(item.id, {
+        status: Number(item.quantityAvailable ?? 0) > 0 ? "active" : "sold_out",
+      });
+      await load();
+    } catch (e: any) {
+      Alert.alert("Could not resume listing", e?.message ?? "Please try again.");
     }
   }
 
@@ -94,6 +106,10 @@ export default function SellerListingsScreen() {
               <Text style={styles.summaryValue}>{activeCount}</Text>
             </View>
             <View style={styles.summaryCard}>
+              <Text style={styles.summaryLabel}>Paused</Text>
+              <Text style={styles.summaryValue}>{pausedCount}</Text>
+            </View>
+            <View style={styles.summaryCard}>
               <Text style={styles.summaryLabel}>Sold out</Text>
               <Text style={styles.summaryValue}>{soldOutCount}</Text>
             </View>
@@ -109,8 +125,10 @@ export default function SellerListingsScreen() {
           {items.length ? (
             items.map((item) => {
               const soldOut = item.status === "sold_out";
+              const paused = item.status === "hidden";
+              const inactive = soldOut || paused;
               return (
-                <View key={item.id} style={[styles.card, soldOut ? styles.cardSoldOut : null]}>
+                <View key={item.id} style={[styles.card, inactive ? styles.cardSoldOut : null]}>
                   <View style={styles.bannerWrap}>
                     {item.imageUrl ? (
                       <Image source={{ uri: item.imageUrl }} style={styles.bannerImage} />
@@ -120,9 +138,14 @@ export default function SellerListingsScreen() {
                       </View>
                     )}
                     <View style={styles.overlayRow}>
-                      <View style={[styles.statusPill, soldOut ? styles.soldOutPill : styles.activePill]}>
-                        <Text style={[styles.statusPillText, soldOut ? styles.soldOutPillText : null]}>
-                          {soldOut ? "Sold out" : `${item.quantityAvailable} left`}
+                      <View
+                        style={[
+                          styles.statusPill,
+                          paused ? styles.pausedPill : soldOut ? styles.soldOutPill : styles.activePill,
+                        ]}
+                      >
+                        <Text style={[styles.statusPillText, inactive ? styles.soldOutPillText : null]}>
+                          {paused ? "Paused" : soldOut ? "Sold out" : `${item.quantityAvailable} left`}
                         </Text>
                       </View>
                       <Text style={styles.priceText}>{item.priceDzd} DZD</Text>
@@ -167,21 +190,25 @@ export default function SellerListingsScreen() {
                           setRestockAmount(String(Math.max(item.quantityAvailable || 1, 1)));
                         }}
                       >
-                        <Text style={styles.actionSecondaryText}>Restock</Text>
+                        <Text style={styles.actionSecondaryText}>{soldOut ? "Restock" : "Adjust stock"}</Text>
                       </Pressable>
                     </View>
 
-                    {!soldOut ? (
+                    {paused ? (
+                      <Pressable style={[styles.actionButton, styles.actionResume]} onPress={() => resumeListing(item)}>
+                        <Text style={styles.actionResumeText}>Resume listing</Text>
+                      </Pressable>
+                    ) : !soldOut ? (
                       <Pressable
                         style={[styles.actionButton, styles.actionDanger]}
                         onPress={() =>
-                          Alert.alert("Mark sold out", "This listing will be hidden from customers until you restock it.", [
+                          Alert.alert("Pause listing", "This listing will be hidden from customers until you resume it.", [
                             { text: "Cancel", style: "cancel" },
-                            { text: "Mark sold out", style: "destructive", onPress: () => markSoldOut(item) },
+                            { text: "Pause listing", style: "destructive", onPress: () => pauseListing(item) },
                           ])
                         }
                       >
-                        <Text style={styles.actionDangerText}>Mark sold out</Text>
+                        <Text style={styles.actionDangerText}>Pause listing</Text>
                       </Pressable>
                     ) : null}
                   </View>
@@ -192,7 +219,7 @@ export default function SellerListingsScreen() {
             <View style={styles.emptyCard}>
               <Text style={styles.emptyTitle}>No listings yet</Text>
               <Text style={styles.emptyText}>
-                Create your first bag here, then come back to restock or mark it sold out whenever you need.
+                Create your first bag here, then come back to pause, resume, or restock it whenever you need.
               </Text>
             </View>
           )}
@@ -279,6 +306,7 @@ const styles = StyleSheet.create({
   },
   statusPill: { borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: "#FFF0A8" },
   activePill: { backgroundColor: "#FFF0A8" },
+  pausedPill: { backgroundColor: "rgba(240,245,244,0.96)" },
   soldOutPill: { backgroundColor: "rgba(255,255,255,0.92)" },
   statusPillText: { color: "#334240", fontWeight: "900", fontSize: 13 },
   soldOutPillText: { color: "#5D6A68" },
@@ -313,6 +341,8 @@ const styles = StyleSheet.create({
   actionGhostText: { color: "#1F2C2B", fontWeight: "900" },
   actionSecondary: { backgroundColor: "#E8F5F2" },
   actionSecondaryText: { color: "#116B62", fontWeight: "900" },
+  actionResume: { marginTop: 10, backgroundColor: "#0C766F" },
+  actionResumeText: { color: "#FFFFFF", fontWeight: "900" },
   actionDanger: { marginTop: 10, borderWidth: 1, borderColor: "#E8C8CF", backgroundColor: "#FFF8F9" },
   actionDangerText: { color: "#B54E41", fontWeight: "900" },
   emptyCard: {

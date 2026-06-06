@@ -19,7 +19,7 @@ import {
   getTotalBags,
   groupOrdersByMonth,
   type OrderSummary,
-} from "@/src/features/reservations/order-summary";
+} from "@/src/features/orders/order-summary";
 
 export default function OrdersScreen() {
   const { t, lang } = useLang();

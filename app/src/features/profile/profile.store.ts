@@ -28,6 +28,7 @@ export type PaymentCard = {
 export type ProfileSettings = {
   username: string;
   email: string;
+  role: "client" | "seller" | "admin";
   phone: string;
   country: string;
   gender: string;
@@ -51,6 +52,7 @@ function makeDefaultProfile(): ProfileSettings {
   return {
     username: "",
     email: "",
+    role: "client",
     phone: "",
     country: "Algeria",
     gender: "",
@@ -108,6 +110,7 @@ export async function mergeProfileSettings(next: Partial<ProfileSettings>) {
 export async function syncProfileFromAuth(user: {
   username?: string | null;
   email?: string | null;
+  role?: "client" | "seller" | "admin" | null;
   phone?: string | null;
 }) {
   const current = await getProfileSettings();
@@ -116,6 +119,7 @@ export async function syncProfileFromAuth(user: {
     ...current,
     username: user.username?.trim() || current.username,
     email: user.email?.trim() || current.email,
+    role: user.role ?? current.role,
     phone: user.phone?.trim() || current.phone,
   });
 }
@@ -123,6 +127,7 @@ export async function syncProfileFromAuth(user: {
 export async function syncProfileFromServer(user: {
   username?: string | null;
   email?: string | null;
+  role?: "client" | "seller" | "admin" | null;
   phone?: string | null;
   country?: string | null;
   gender?: string | null;
@@ -137,6 +142,7 @@ export async function syncProfileFromServer(user: {
     ...current,
     username: user.username?.trim() || current.username,
     email: user.email?.trim() || current.email,
+    role: user.role ?? current.role,
     phone: user.phone?.trim() || current.phone,
     country: user.country?.trim() || current.country,
     gender: user.gender?.trim() || current.gender,

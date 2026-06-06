@@ -156,15 +156,23 @@ export class ListingsService {
   }
 
   async update(id: number, dto: UpdateListingDto, user: JwtUser) {
-    const listing = await this.repo.findOne({ where: { id } });
-    if (!listing) throw new NotFoundException();
+    return this.repo.manager.transaction(async (manager) => {
+      const listing = await manager
+        .getRepository(Listing)
+        .createQueryBuilder("listing")
+        .where("listing.id = :id", { id })
+        .setLock("pessimistic_write")
+        .getOne();
 
-    if (listing.sellerId !== user.sub && user.role !== "admin") {
-      throw new ForbiddenException();
-    }
+      if (!listing) throw new NotFoundException();
 
-    Object.assign(listing, dto);
-    return this.repo.save(listing);
+      if (listing.sellerId !== user.sub && user.role !== "admin") {
+        throw new ForbiddenException();
+      }
+
+      Object.assign(listing, dto);
+      return manager.getRepository(Listing).save(listing);
+    });
   }
 
   async remove(id: number, user: JwtUser) {

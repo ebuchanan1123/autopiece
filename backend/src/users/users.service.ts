@@ -1,8 +1,10 @@
 import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { IsNull, Repository } from "typeorm";
 import { User, UserRole } from "./user.entity";
 import { UpdateMeDto } from "./dto/update-me.dto";
+import { UserPushToken, type PushPlatform } from "./user-push-token.entity";
+import { UpdatePushTokenDto } from "./dto/update-push-token.dto";
 
 @Injectable()
 export class UsersService {
@@ -21,6 +23,8 @@ export class UsersService {
   constructor(
     @InjectRepository(User)
     private readonly usersRepository: Repository<User>,
+    @InjectRepository(UserPushToken)
+    private readonly pushTokenRepository: Repository<UserPushToken>,
   ) {}
 
   findAll(): Promise<User[]> {
@@ -219,5 +223,116 @@ export class UsersService {
     }
 
     return this.usersRepository.save(user);
+  }
+
+  async registerPushToken(userId: number, dto: UpdatePushTokenDto) {
+    const token = dto.token.trim();
+    if (!token) return;
+
+    const existing = await this.pushTokenRepository.findOne({
+      where: { token },
+    });
+
+    if (existing) {
+      existing.userId = userId;
+      existing.platform = (dto.platform ??
+        existing.platform ??
+        "unknown") as PushPlatform;
+      existing.disabledAt = null;
+      existing.updatedAt = new Date();
+      await this.pushTokenRepository.save(existing);
+      return existing;
+    }
+
+    const next = this.pushTokenRepository.create({
+      userId,
+      token,
+      platform: (dto.platform ?? "unknown") as PushPlatform,
+      disabledAt: null,
+      lastDeliveredAt: null,
+    });
+
+    return this.pushTokenRepository.save(next);
+  }
+
+  async unregisterPushToken(userId: number, token: string) {
+    const trimmed = token.trim();
+    if (!trimmed) return;
+
+    const existing = await this.pushTokenRepository.findOne({
+      where: { userId, token: trimmed },
+    });
+    if (!existing) return;
+
+    existing.disabledAt = new Date();
+    await this.pushTokenRepository.save(existing);
+  }
+
+  async sendPushToUsers(
+    userIds: number[],
+    message: {
+      title: string;
+      body: string;
+      data?: Record<string, unknown>;
+    },
+  ) {
+    const uniqueUserIds = Array.from(
+      new Set(userIds.filter((id) => Number.isFinite(id))),
+    );
+    if (!uniqueUserIds.length) return;
+
+    const recipients = await this.usersRepository.find({
+      where: uniqueUserIds.map((id) => ({ id })),
+    });
+    const allowedUsers = new Set(
+      recipients
+        .filter(
+          (user) =>
+            this.normalizeNotifications(user.notificationSettings)
+              .pushNotifications,
+        )
+        .map((user) => Number(user.id)),
+    );
+    if (!allowedUsers.size) return;
+
+    const tokens = await this.pushTokenRepository.find({
+      where: uniqueUserIds.map((userId) => ({
+        userId,
+        disabledAt: IsNull(),
+      })),
+    });
+
+    const messages = tokens
+      .filter((token) => allowedUsers.has(Number(token.userId)))
+      .map((token) => ({
+        to: token.token,
+        sound: "default",
+        title: message.title,
+        body: message.body,
+        data: message.data ?? {},
+      }));
+
+    if (!messages.length) return;
+
+    const res = await fetch("https://exp.host/--/api/v2/push/send", {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Accept-Encoding": "gzip, deflate",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(messages),
+    }).catch(() => null);
+
+    if (!res?.ok) return;
+
+    const deliveredTokens = messages.map((entry) => entry.to);
+    await this.pushTokenRepository
+      .createQueryBuilder()
+      .update(UserPushToken)
+      .set({ lastDeliveredAt: new Date() })
+      .where("token IN (:...tokens)", { tokens: deliveredTokens })
+      .execute()
+      .catch(() => {});
   }
 }

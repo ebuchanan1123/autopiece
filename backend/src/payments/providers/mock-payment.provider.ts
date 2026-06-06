@@ -15,6 +15,7 @@ export class MockPaymentProvider implements PaymentProviderAdapter {
       provider: this.mapRequestedMethod(request.requestedMethod),
       status: "success",
       providerPaymentId: `mock_${request.orderNumber}_${Date.now()}`,
+      checkoutUrl: null,
       rawPayload: {
         gateway: this.gateway,
         selectedMethod: request.requestedMethod ?? "saved_card",
@@ -25,8 +26,6 @@ export class MockPaymentProvider implements PaymentProviderAdapter {
   }
 
   private mapRequestedMethod(method?: CheckoutMethod) {
-    if (method === "apple_pay") return "apple_pay" as const;
-    if (method === "paypal") return "paypal" as const;
     return "satim" as const;
   }
 }

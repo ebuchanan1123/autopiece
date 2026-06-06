@@ -16,15 +16,21 @@ export class SatimPaymentProvider implements PaymentProviderAdapter {
     const merchantId = this.config.get<string>("SATIM_MERCHANT_ID");
     const terminalId = this.config.get<string>("SATIM_TERMINAL_ID");
     const apiKey = this.config.get<string>("SATIM_API_KEY");
+    const returnUrl = this.config.get<string>("SATIM_RETURN_URL");
+    const callbackUrl = this.config.get<string>("SATIM_CALLBACK_URL");
 
-    if (!merchantId || !terminalId || !apiKey) {
-      return Promise.reject(new ServiceUnavailableException(
-        "SATIM checkout is not configured yet. Keep PAYMENTS_PROVIDER=mock until live credentials and the SATIM request signing flow are implemented.",
-      ));
+    if (!merchantId || !terminalId || !apiKey || !returnUrl || !callbackUrl) {
+      return Promise.reject(
+        new ServiceUnavailableException(
+          "SATIM checkout is not configured yet. Keep PAYMENTS_PROVIDER=mock until live credentials, return URLs, callback URLs, and the SATIM request signing flow are implemented.",
+        ),
+      );
     }
 
-    return Promise.reject(new ServiceUnavailableException(
-      `SATIM checkout is not wired yet for order ${request.orderNumber}. The provider layer is ready, but the signed request/redirect flow still needs to be implemented.`,
-    ));
+    return Promise.reject(
+      new ServiceUnavailableException(
+        `SATIM checkout is not wired yet for order ${request.orderNumber}. The provider layer is ready, but the signed request/redirect flow still needs to be implemented.`,
+      ),
+    );
   }
 }

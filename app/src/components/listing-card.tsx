@@ -1,4 +1,12 @@
-import { Pressable, StyleSheet, Text, View, Image, ImageBackground } from "react-native";
+import {
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  Image,
+  ImageBackground,
+  type DimensionValue,
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useLang, type AppLang } from "@/src/features/i18n/lang.context";
 import type { Listing } from "@/src/features/listings/listings.api";
@@ -74,7 +82,7 @@ type ListingCardProps = {
   isFavourite: boolean;
   onToggleFavourite: () => void;
   distanceKm?: number | null;
-  width?: number | string;
+  width?: DimensionValue;
   compact?: boolean;
   showAlertIcon?: boolean;
 };
@@ -97,7 +105,9 @@ export function ListingCard({
   const priceNow = `${Number(item.priceDzd ?? 0)} DZD`;
   const priceBefore =
     Number(item.originalValueDzd ?? 0) > 0 ? `${Number(item.originalValueDzd)} DZD` : null;
-  const logoInitials = getStoreInitials(item.storeName || item.title);
+  const displayTitle = item.storeName?.trim() || item.title;
+  const displaySubtitle = item.title?.trim() || item.description;
+  const logoInitials = getStoreInitials(displayTitle);
 
   return (
     <Pressable
@@ -168,13 +178,13 @@ export function ListingCard({
         <View style={styles.titleRow}>
           <View style={styles.titleBlock}>
             <Text style={[styles.title, isSoldOut ? styles.textMuted : null]} numberOfLines={1}>
-              {item.title}
+              {displayTitle}
             </Text>
             <Text
               style={[styles.subtitle, compact ? styles.subtitleCompact : null, isSoldOut ? styles.textMutedSoft : null]}
               numberOfLines={1}
             >
-              {item.description}
+              {displaySubtitle}
             </Text>
           </View>
 

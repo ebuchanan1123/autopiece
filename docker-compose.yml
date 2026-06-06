@@ -49,6 +49,14 @@ services:
       LIBRETRANSLATE_URL: http://translate:5000
       # LIBRETRANSLATE_API_KEY: ""  # only if you ever add one
       GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY:-}
+      PAYMENTS_PROVIDER: ${PAYMENTS_PROVIDER:-mock}
+      SATIM_MODE: ${SATIM_MODE:-test}
+      SATIM_MERCHANT_ID: ${SATIM_MERCHANT_ID:-}
+      SATIM_TERMINAL_ID: ${SATIM_TERMINAL_ID:-}
+      SATIM_API_KEY: ${SATIM_API_KEY:-}
+      SATIM_CALLBACK_SECRET: ${SATIM_CALLBACK_SECRET:-}
+      SATIM_RETURN_URL: ${SATIM_RETURN_URL:-http://localhost:3002/payments/satim/return}
+      SATIM_CALLBACK_URL: ${SATIM_CALLBACK_URL:-http://localhost:3002/payments/satim/callback}
 
       JWT_SECRET: a7ec9a328c2eb75d39f8c2f2cf5b3c24440a82f19b7d0db25562fb60d7debec636e0dc79d5963ea072a4c7c18e37ad56
       JWT_EXPIRES_IN: 15m

@@ -5,7 +5,6 @@ import { ConfigModule, ConfigService } from "@nestjs/config";
 import { LoggerModule } from "nestjs-pino";
 import { OrdersModule } from "./orders/orders.module";
 import { APP_FILTER } from "@nestjs/core";
-import { ReservationsModule } from "./reservations/reservations.module";
 import { FavouritesModule } from "./favourites/favourites.module";
 
 import { AppController } from "./app.controller";
@@ -15,13 +14,13 @@ import { UsersModule } from "./users/users.module";
 import { SellersModule } from "./sellers/sellers.module";
 import { AuthModule } from "./auth/auth.module";
 import { ListingModule } from "./listings/listing.module";
+import { AdminModule } from "./admin/admin.module";
 
 import { AllExceptionsFilter } from "./common/filters/all-exceptions.filter";
 
 @Module({
   imports: [
     ListingModule,
-    ReservationsModule,
     OrdersModule,
     FavouritesModule,
     ConfigModule.forRoot({ isGlobal: true }),
@@ -35,8 +34,23 @@ import { AllExceptionsFilter } from "./common/filters/all-exceptions.filter";
           paths: [
             "req.headers.authorization",
             "req.headers.cookie",
+            "req.headers.x-satim-signature",
+            "req.headers.x-payment-signature",
+            "req.headers.x-signature",
             "req.body.password",
+            "req.body.newPassword",
+            "req.body.confirmPassword",
             "req.body.refreshToken",
+            "req.body.accessToken",
+            "req.body.token",
+            "req.body.apiKey",
+            "req.body.cardNumber",
+            "req.body.cvv",
+            "req.body.expiry",
+            "req.body.expiryMonth",
+            "req.body.expiryYear",
+            "req.body.rawPayload",
+            "req.body.providerPaymentId",
             'res.headers["set-cookie"]',
           ],
           remove: true,
@@ -63,11 +77,15 @@ import { AllExceptionsFilter } from "./common/filters/all-exceptions.filter";
         const sslEnabled =
           (config.get<string>("DB_SSL") ?? "").toLowerCase() === "true" ||
           nodeEnv === "production";
+        const rejectUnauthorized =
+          (
+            config.get<string>("DB_SSL_REJECT_UNAUTHORIZED") ?? "true"
+          ).toLowerCase() !== "false";
 
         const common = {
           autoLoadEntities: true,
           synchronize: false,
-          ssl: sslEnabled ? { rejectUnauthorized: false } : false,
+          ssl: sslEnabled ? { rejectUnauthorized } : false,
         };
 
         if (databaseUrl) {
@@ -93,6 +111,7 @@ import { AllExceptionsFilter } from "./common/filters/all-exceptions.filter";
     UsersModule,
     SellersModule,
     AuthModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [

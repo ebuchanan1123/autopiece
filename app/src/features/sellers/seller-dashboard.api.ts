@@ -24,8 +24,9 @@ export async function getSellerOrders() {
   return apiFetch<SellerOrderItem[]>("/orders/seller");
 }
 
-export async function markSellerOrderItemPickedUp(itemId: number) {
+export async function markSellerOrderItemPickedUp(itemId: number, pickupPin: string) {
   return apiFetch<{ ok: boolean }>(`/orders/items/${itemId}/picked-up`, {
     method: "PATCH",
+    body: JSON.stringify({ pickupPin }),
   });
 }

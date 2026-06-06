@@ -7,6 +7,7 @@ import {
   Query,
   UseGuards,
 } from "@nestjs/common";
+import { Throttle } from "@nestjs/throttler";
 import { SellersService } from "./sellers.service";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
@@ -17,6 +18,7 @@ import { UpdateSellerProfileDto } from "./dto/update-seller-profile.dto";
 export class SellersController {
   constructor(private readonly sellersService: SellersService) {}
 
+  @Throttle({ default: { limit: 30, ttl: 60_000 } })
   @Get("place-search")
   searchPlaces(@Query("q") q?: string) {
     return this.sellersService.searchPlaces(q ?? "");

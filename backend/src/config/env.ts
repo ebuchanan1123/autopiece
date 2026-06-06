@@ -16,6 +16,20 @@ const secretSchema = z
   .min(32, "Must be at least 32 characters")
   .refine((s) => !/\s/.test(s), "Must not contain spaces");
 
+function isLocalOrigin(origin: string) {
+  try {
+    const url = new URL(origin);
+    return ["localhost", "127.0.0.1", "0.0.0.0"].includes(url.hostname);
+  } catch {
+    return true;
+  }
+}
+
+function isPlaceholder(value: string | undefined) {
+  if (!value) return true;
+  return /replace|placeholder|changeme|example|test_secret/i.test(value);
+}
+
 const schema = z
   .object({
     NODE_ENV: nodeEnvSchema,
@@ -29,11 +43,13 @@ const schema = z
     DB_PASSWORD: z.string().default("password"),
     DB_NAME: z.string().default("autoparts"),
     DB_SSL: boolFromString.default(false),
+    DB_SSL_REJECT_UNAUTHORIZED: boolFromString.default(true),
 
     // JWT (unified)
     JWT_SECRET: secretSchema,
     JWT_EXPIRES_IN: z.string().default("15m"),
     JWT_REFRESH_EXPIRES_IN: z.string().default("30d"),
+    SESSION_FINGERPRINT_SECRET: secretSchema,
 
     // Cookies
     COOKIE_SECURE: boolFromString.default(false),
@@ -44,6 +60,16 @@ const schema = z
     CORS_ORIGINS: z
       .string()
       .default("http://localhost:3000,http://localhost:3001"),
+
+    // Payments
+    PAYMENTS_PROVIDER: z.enum(["mock", "satim"]).default("mock"),
+    SATIM_MODE: z.enum(["test", "production"]).default("test"),
+    SATIM_MERCHANT_ID: z.string().optional(),
+    SATIM_TERMINAL_ID: z.string().optional(),
+    SATIM_API_KEY: z.string().optional(),
+    SATIM_CALLBACK_SECRET: z.string().optional(),
+    SATIM_RETURN_URL: z.string().url().optional(),
+    SATIM_CALLBACK_URL: z.string().url().optional(),
   })
   .superRefine((env, ctx) => {
     if (env.NODE_ENV === "production") {
@@ -70,6 +96,69 @@ const schema = z
           message:
             "JWT_SECRET looks like a dev secret. Use a long random value in production.",
         });
+      }
+
+      if (env.SESSION_FINGERPRINT_SECRET.toLowerCase().includes("dev")) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["SESSION_FINGERPRINT_SECRET"],
+          message:
+            "SESSION_FINGERPRINT_SECRET looks like a dev secret. Use a long random value in production.",
+        });
+      }
+
+      if (!env.CORS_ORIGINS.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["CORS_ORIGINS"],
+          message: "Must list explicit production origins",
+        });
+      }
+
+      const origins = env.CORS_ORIGINS.split(",")
+        .map((origin) => origin.trim())
+        .filter(Boolean);
+
+      for (const origin of origins) {
+        if (origin === "*" || isLocalOrigin(origin)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["CORS_ORIGINS"],
+            message:
+              "Production CORS origins must be real HTTPS app/admin domains, not localhost or wildcards.",
+          });
+          break;
+        }
+      }
+
+      if (env.PAYMENTS_PROVIDER === "mock") {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["PAYMENTS_PROVIDER"],
+          message: "Mock payments are not allowed in production",
+        });
+      }
+    }
+
+    if (env.NODE_ENV === "production" || env.PAYMENTS_PROVIDER === "satim") {
+      const requiredSatimFields: Array<keyof typeof env> = [
+        "SATIM_MERCHANT_ID",
+        "SATIM_TERMINAL_ID",
+        "SATIM_API_KEY",
+        "SATIM_CALLBACK_SECRET",
+        "SATIM_RETURN_URL",
+        "SATIM_CALLBACK_URL",
+      ];
+
+      for (const field of requiredSatimFields) {
+        if (isPlaceholder(String(env[field] ?? ""))) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: [field],
+            message:
+              "Required when using SATIM payments or running in production",
+          });
+        }
       }
     }
   });

@@ -16,11 +16,7 @@ import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import type { JwtUser } from "../auth/types/jwt-user.type";
 import { TranslateListingDto } from "./dto/translate-listing.dto";
-
-type BulkTranslateDto = {
-  lang: "en" | "fr" | "ar";
-  listingIds: number[];
-};
+import { BulkTranslateListingDto } from "./dto/bulk-translate-listing.dto";
 
 @Controller("listings")
 export class ListingsController {
@@ -38,11 +34,8 @@ export class ListingsController {
 
   @UseGuards(JwtAuthGuard)
   @Post("translate/bulk")
-  translateBulk(
-    @Body() dto: { lang: "en" | "fr" | "ar"; listingIds: number[] },
-  ) {
-    const ids = Array.isArray(dto.listingIds) ? dto.listingIds : [];
-    return this.service.translateListingsBulk(ids, dto.lang);
+  translateBulk(@Body() dto: BulkTranslateListingDto) {
+    return this.service.translateListingsBulk(dto.listingIds, dto.lang);
   }
 
   @UseGuards(JwtAuthGuard)

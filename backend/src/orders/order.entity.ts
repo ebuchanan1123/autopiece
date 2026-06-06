@@ -10,9 +10,12 @@ import {
 export type PaymentMethod = "online" | "in_store";
 export type OrderStatus =
   | "reserved"
+  | "payment_pending"
+  | "payment_failed"
   | "in_progress"
   | "picked_up"
   | "paid"
+  | "expired"
   | "cancelled";
 
 @Entity()
@@ -32,11 +35,14 @@ export class Order {
   @Column({ type: "varchar", length: 10, default: "in_store" })
   paymentMethod: PaymentMethod;
 
-  @Column({ type: "varchar", length: 16, default: "reserved" })
+  @Column({ type: "varchar", length: 24, default: "reserved" })
   status: OrderStatus;
 
   @Column({ type: "int", default: 0 })
   totalDzd: number;
+
+  @Column({ type: "varchar", length: 8, nullable: true })
+  pickupPin: string | null;
 
   @CreateDateColumn({ type: "timestamptz" })
   createdAt: Date;

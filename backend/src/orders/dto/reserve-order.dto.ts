@@ -29,8 +29,8 @@ export class ReserveOrderDto {
   paymentMethod: "online" | "in_store";
 
   @IsOptional()
-  @IsIn(["saved_card", "apple_pay", "paypal"])
-  paymentProvider?: "saved_card" | "apple_pay" | "paypal";
+  @IsIn(["saved_card"])
+  paymentProvider?: "saved_card";
 
   @IsOptional()
   @IsString()

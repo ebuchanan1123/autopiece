@@ -8,10 +8,7 @@ export default function RootLayout() {
     <LangProvider>
       <SafeAreaProvider>
         <MenuProvider>
-          <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="(auth)" />
-            <Stack.Screen name="(app)" />
-          </Stack>
+          <Stack screenOptions={{ headerShown: false }} />
         </MenuProvider>
       </SafeAreaProvider>
     </LangProvider>

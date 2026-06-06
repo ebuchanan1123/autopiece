@@ -16,7 +16,9 @@ const databaseUrl =
 export default new DataSource({
   type: "postgres",
   url: databaseUrl,
-  ssl: env.DB_SSL ? { rejectUnauthorized: false } : false,
+  ssl: env.DB_SSL
+    ? { rejectUnauthorized: env.DB_SSL_REJECT_UNAUTHORIZED }
+    : false,
   entities: [__dirname + "/**/*.entity{.ts,.js}"],
   migrations: [__dirname + "/migrations/*{.ts,.js}"],
   synchronize: false,

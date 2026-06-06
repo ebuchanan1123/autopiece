@@ -9,7 +9,10 @@ import { OrderItem } from "./order-item.entity";
 import { SellerNotification } from "./seller-notification.entity";
 import { SellerProfile } from "../sellers/seller.entity";
 import { OrderReview } from "./order-review.entity";
+import { PaymentWebhookEvent } from "../payments/payment-webhook-event.entity";
 import { PaymentsModule } from "../payments/payments.module";
+import { UsersModule } from "../users/users.module";
+import { PaymentCallbacksController } from "./payment-callbacks.controller";
 
 @Module({
   imports: [
@@ -20,11 +23,13 @@ import { PaymentsModule } from "../payments/payments.module";
       SellerNotification,
       SellerProfile,
       OrderReview,
+      PaymentWebhookEvent,
     ]),
     ListingModule,
     PaymentsModule,
+    UsersModule,
   ],
-  controllers: [OrdersController],
+  controllers: [OrdersController, PaymentCallbacksController],
   providers: [OrdersService],
 })
 export class OrdersModule {}

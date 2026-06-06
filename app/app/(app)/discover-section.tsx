@@ -39,8 +39,10 @@ export default function DiscoverSectionScreen() {
   const insets = useSafeAreaInsets();
   const refreshOffset = insets.top + 24;
   const params = useLocalSearchParams<{ section?: string; category?: string }>();
-  const section = isDiscoverSectionKey(params.section ?? "") ? params.section : "topPicks";
-  const category = isCategoryKey(params.category ?? "") ? params.category : "all";
+  const sectionParam = params.section ?? "";
+  const categoryParam = params.category ?? "";
+  const section = isDiscoverSectionKey(sectionParam) ? sectionParam : "topPicks";
+  const category = isCategoryKey(categoryParam) ? categoryParam : "all";
 
   const [items, setItems] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(false);

@@ -50,16 +50,18 @@ export default function AccountDetailsScreen() {
   }
 
   async function save() {
+    if (!form) return;
+    const current = form;
     setSaving(true);
     try {
       await updateMyProfile({
-        email: form.email,
-        phone: form.phone,
-        country: form.country,
-        gender: form.gender,
-        dietaryPreferences: form.dietaryPreferences,
-        birthday: form.birthday,
-        preferredPickupTimes: form.preferredPickupTimes,
+        email: current.email,
+        phone: current.phone,
+        country: current.country,
+        gender: current.gender,
+        dietaryPreferences: current.dietaryPreferences,
+        birthday: current.birthday,
+        preferredPickupTimes: current.preferredPickupTimes,
       });
       const refreshed = await getProfileSettings();
       setForm(refreshed);
@@ -72,12 +74,14 @@ export default function AccountDetailsScreen() {
   }
 
   function togglePickupTime(value: string) {
-    const exists = form.preferredPickupTimes.includes(value);
+    if (!form) return;
+    const current = form;
+    const exists = current.preferredPickupTimes.includes(value);
     setForm({
-      ...form,
+      ...current,
       preferredPickupTimes: exists
-        ? form.preferredPickupTimes.filter((item) => item !== value)
-        : [...form.preferredPickupTimes, value],
+        ? current.preferredPickupTimes.filter((item) => item !== value)
+        : [...current.preferredPickupTimes, value],
     });
   }
 

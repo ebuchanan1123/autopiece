@@ -17,7 +17,7 @@ import {
   getOrderDetails,
   submitOrderItemReview,
   type OrderDetails,
-} from "@/src/features/reservations/reservations.api";
+} from "@/src/features/orders/orders.api";
 import { ScreenBody } from "@/src/components/screen-body";
 import { ScreenHeader } from "@/src/components/screen-header";
 
@@ -25,12 +25,14 @@ function statusLabel(status?: string) {
   if (status === "picked_up") return "Picked up";
   if (status === "in_progress") return "In progress";
   if (status === "paid") return "Paid";
+  if (status === "expired") return "Expired";
   if (status === "cancelled") return "Cancelled";
   if (status === "reserved") return "Reserved";
   return status ?? "Order";
 }
 
 function statusTone(status?: string) {
+  if (status === "expired") return styles.statusWrapExpired;
   if (status === "cancelled") return styles.statusWrapCancelled;
   return styles.statusWrapDefault;
 }
@@ -38,10 +40,9 @@ function statusTone(status?: string) {
 function paymentLabel(data: OrderDetails | null) {
   if (!data) return "Unknown";
   if (data.order.paymentMethod !== "online") return "Pay in store";
-  if (data.payment?.provider === "apple_pay") return "Apple Pay";
-  if (data.payment?.provider === "paypal") return "PayPal";
   if (data.payment?.cardLast4) return `Payment card •••• ${data.payment.cardLast4}`;
-  return "Online payment";
+  if (data.payment?.provider === "satim") return "Card payment";
+  return "Online checkout";
 }
 
 function formatDate(value?: string) {
@@ -248,6 +249,14 @@ export default function OrderDetailsScreen() {
                 </View>
               </View>
 
+              {orderStatus !== "picked_up" && data.pickupPin ? (
+                <View style={styles.pickupPinCard}>
+                  <Text style={styles.pickupPinLabel}>Pickup PIN</Text>
+                  <Text style={styles.pickupPinValue}>{data.pickupPin}</Text>
+                  <Text style={styles.pickupPinHint}>Show this code to the seller at pickup.</Text>
+                </View>
+              ) : null}
+
               {orderStatus !== "picked_up" ? (
                 <View style={styles.pickupNote}>
                   <Ionicons name="phone-portrait-outline" size={22} color="#0C766F" />
@@ -344,19 +353,19 @@ export default function OrderDetailsScreen() {
               <Text style={styles.modalTitle}>Rate your bag</Text>
               <Text style={styles.modalBody}>Tell us a bit more about the pickup experience.</Text>
 
-              {[
+              {([
                 ["Pickup", pickupRating, setPickupRating],
                 ["Quality", qualityRating, setQualityRating],
                 ["Variety", varietyRating, setVarietyRating],
                 ["Quantity", quantityRating, setQuantityRating],
-              ].map(([label, value, setter]) => (
+              ] satisfies [string, number, (value: number) => void][]).map(([label, value, setter]) => (
                 <View key={String(label)} style={styles.ratingRow}>
                   <Text style={styles.ratingRowLabel}>{label}</Text>
                   <View style={styles.ratingRowStars}>
                     {Array.from({ length: 5 }).map((_, index) => {
                       const ratingValue = index + 1;
                       return (
-                        <Pressable key={ratingValue} onPress={() => (setter as (value: number) => void)(ratingValue)}>
+                        <Pressable key={ratingValue} onPress={() => setter(ratingValue)}>
                           <Ionicons
                             name={ratingValue <= Number(value) ? "star" : "star-outline"}
                             size={28}
@@ -399,10 +408,22 @@ const styles = StyleSheet.create({
   ratingHint: { marginTop: 14, color: "rgba(255,255,255,0.84)", fontWeight: "700", textAlign: "center" },
   receiptShell: { marginTop: 18, borderRadius: 28, padding: 18 },
   statusWrapDefault: { backgroundColor: "#0B6E69" },
+  statusWrapExpired: { backgroundColor: "#8B6C2F" },
   statusWrapCancelled: { backgroundColor: "#9C564C" },
   receiptStatusRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 16 },
   receiptStatusText: { color: "#FFFFFF", fontWeight: "900", fontSize: 18 },
   receiptInner: { backgroundColor: "#FFFFFF", borderRadius: 24, padding: 18 },
+  pickupPinCard: {
+    marginTop: 16,
+    backgroundColor: "#123A36",
+    borderRadius: 24,
+    paddingVertical: 20,
+    paddingHorizontal: 18,
+    alignItems: "center",
+  },
+  pickupPinLabel: { color: "#B8D8D2", fontSize: 13, fontWeight: "800", textTransform: "uppercase" },
+  pickupPinValue: { marginTop: 10, color: "#FFFFFF", fontSize: 44, fontWeight: "900", letterSpacing: 6 },
+  pickupPinHint: { marginTop: 8, color: "#D4E9E4", fontWeight: "700" },
   storeRow: { flexDirection: "row", alignItems: "center" },
   storeLogoWrap: {
     width: 64,

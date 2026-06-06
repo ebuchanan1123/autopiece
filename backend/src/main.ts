@@ -6,6 +6,8 @@ import cookieParser from "cookie-parser";
 import { json, urlencoded } from "express";
 import { Logger } from "nestjs-pino";
 import { AllExceptionsFilter } from "./common/filters/all-exceptions.filter";
+import { loadEnv } from "./config/env";
+import * as dotenv from "dotenv";
 
 function parseCorsOrigins(value: string | undefined): string[] {
   return (value ?? "")
@@ -15,6 +17,11 @@ function parseCorsOrigins(value: string | undefined): string[] {
 }
 
 async function bootstrap() {
+  if (process.env.NODE_ENV !== "production") {
+    dotenv.config();
+  }
+  loadEnv();
+
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
 
   app.useLogger(app.get(Logger));
@@ -38,7 +45,7 @@ async function bootstrap() {
   app.enableCors({
     origin: (origin, callback) => {
       if (!origin) return callback(null, true); // Postman/curl
-      if (allowed.size === 0) return callback(null, true); // dev fallback if unset
+      if (!isProd && allowed.size === 0) return callback(null, true); // dev fallback if unset
       if (allowed.has(origin)) return callback(null, true);
       return callback(new Error("Not allowed by CORS"), false);
     },
@@ -67,17 +74,6 @@ async function bootstrap() {
 
   const port = Number(process.env.PORT) || 3000;
   await app.listen(port, "0.0.0.0");
-
-  const server: any = app.getHttpServer();
-  const router = server._events?.request?._router;
-  const routes = router?.stack
-    ?.filter((l: any) => l.route)
-    ?.map((l: any) => ({
-      path: l.route.path,
-      methods: l.route.methods,
-    }));
-
-  console.log(routes);
 }
 
 bootstrap();

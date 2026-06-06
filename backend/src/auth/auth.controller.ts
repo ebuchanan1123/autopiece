@@ -18,6 +18,9 @@ import { LoginDto } from "./dto/login.dto";
 import { JwtAuthGuard } from "./guards/jwt-auth.guard";
 
 type SameSite = "lax" | "strict" | "none";
+type RequestWithCookies = Request & {
+  cookies?: Record<string, string | undefined>;
+};
 
 @Controller("auth")
 export class AuthController {
@@ -81,8 +84,8 @@ export class AuthController {
     res.clearCookie("refresh_token", { path: "/auth", domain });
   }
 
-  private getRefreshCookie(req: Request): string | undefined {
-    return (req as any).cookies?.refresh_token;
+  private getRefreshCookie(req: RequestWithCookies): string | undefined {
+    return req.cookies?.refresh_token;
   }
 
   private getRequestMeta(req: Request): { ip?: string; userAgent?: string } {

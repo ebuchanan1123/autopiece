@@ -38,6 +38,9 @@ The app reads the backend URL from `EXPO_PUBLIC_API_URL`.
 
 If that variable is not set, the app falls back to the Expo host IP and port `3002`.
 
+Production builds must set `EXPO_PUBLIC_API_URL` to the final HTTPS API domain.
+The app rejects localhost or non-HTTPS API URLs outside development builds.
+
 ## App Structure
 
 - `app/app`: Expo Router screens

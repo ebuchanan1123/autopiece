@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Linking,
   Modal,
   Pressable,
   ScrollView,
@@ -13,13 +14,12 @@ import { router, Stack, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { getListing, type Listing } from "@/src/features/listings/listings.api";
-import { reserveOrder } from "@/src/features/reservations/reservations.api";
+import { reserveOrder } from "@/src/features/orders/orders.api";
 import { getProfileSettings, type PaymentCard } from "@/src/features/profile/profile.store";
 
 type PaymentMethodOption =
   | { kind: "saved_card"; title: string; subtitle: string; card?: PaymentCard }
-  | { kind: "apple_pay"; title: string; subtitle: string }
-  | { kind: "paypal"; title: string; subtitle: string };
+  | { kind: "card_checkout"; title: string; subtitle: string };
 
 export default function CheckoutScreen() {
   const insets = useSafeAreaInsets();
@@ -56,9 +56,9 @@ export default function CheckoutScreen() {
           });
         } else {
           setSelectedMethod({
-            kind: "apple_pay",
-            title: "Apple Pay",
-            subtitle: "Fast checkout",
+            kind: "card_checkout",
+            title: "Card checkout",
+            subtitle: "Secure online payment will be finalized with SATIM",
           });
         }
       } catch (e: any) {
@@ -79,10 +79,11 @@ export default function CheckoutScreen() {
         card,
       });
     }
-    methods.push(
-      { kind: "apple_pay", title: "Apple Pay", subtitle: "Fast checkout" },
-      { kind: "paypal", title: "PayPal", subtitle: "Use your PayPal account" },
-    );
+    methods.push({
+      kind: "card_checkout",
+      title: "Card checkout",
+      subtitle: "Use the current online payment flow while SATIM is being finalized",
+    });
     return methods;
   }, [cards]);
 
@@ -98,25 +99,30 @@ export default function CheckoutScreen() {
       setPaying(true);
       const response = await reserveOrder(listing.id, quantity, {
         paymentMethod: "online",
-        paymentProvider: selectedMethod.kind,
+        paymentProvider: selectedMethod.kind === "saved_card" ? "saved_card" : undefined,
         paymentCardLast4:
           selectedMethod.kind === "saved_card" ? selectedMethod.card?.last4 : undefined,
       });
 
-      Alert.alert(
-        "Payment complete",
-        "Your Surprise Bag is reserved. The seller has been notified to prepare it.",
-        [
-          {
-            text: "View orders",
-            onPress: () => router.replace("/(app)/orders"),
-          },
-        ],
-      );
-
+      if (response.status === "payment_pending" && response.checkoutUrl) {
+        await Linking.openURL(response.checkoutUrl);
+        Alert.alert(
+          "Payment started",
+          "Complete the secure card checkout to confirm your Surprise Bag.",
+        );
+      } else {
+        Alert.alert(
+          "Reservation confirmed",
+          "Your Surprise Bag is reserved and the seller has been notified to prepare it.",
+        );
+      }
+      router.replace({
+        pathname: "/(app)/order-confirmed/[id]",
+        params: { id: String(response.orderId) },
+      });
       return response;
     } catch (e: any) {
-      Alert.alert("Payment failed", e?.message ?? "Please try again.");
+      Alert.alert("Checkout failed", e?.message ?? "Please try again.");
     } finally {
       setPaying(false);
     }
@@ -124,15 +130,11 @@ export default function CheckoutScreen() {
 
   function paymentLabel() {
     if (!selectedMethod) return "Pay";
-    if (selectedMethod.kind === "apple_pay") return "Apple Pay";
-    if (selectedMethod.kind === "paypal") return "Pay with PayPal";
+    if (selectedMethod.kind === "card_checkout") return "Confirm order";
     return "Pay now";
   }
 
   function paymentIconName() {
-    if (!selectedMethod) return "card-outline" as const;
-    if (selectedMethod.kind === "apple_pay") return "logo-apple" as const;
-    if (selectedMethod.kind === "paypal") return "logo-paypal" as const;
     return "card-outline" as const;
   }
 
@@ -175,6 +177,10 @@ export default function CheckoutScreen() {
 
               <View style={styles.panel}>
                 <Text style={styles.panelLabel}>Payment method</Text>
+                <Text style={styles.panelHint}>
+                  Online card payments are still in the final integration phase. This checkout flow
+                  keeps reservations working while SATIM is being connected.
+                </Text>
                 <View style={styles.methodRow}>
                   <View style={styles.methodLeft}>
                     <View style={styles.methodIconBox}>
@@ -222,17 +228,12 @@ export default function CheckoutScreen() {
               <Pressable
                 style={[
                   styles.payButton,
-                  selectedMethod?.kind === "apple_pay" ? styles.payButtonDark : null,
                   paying ? styles.payButtonDisabled : null,
                 ]}
                 onPress={onPay}
                 disabled={paying}
               >
-                <Ionicons
-                  name={paymentIconName()}
-                  size={selectedMethod?.kind === "apple_pay" ? 30 : 22}
-                  color="#FFFFFF"
-                />
+                <Ionicons name={paymentIconName()} size={22} color="#FFFFFF" />
                 <Text style={styles.payButtonText}>{paying ? "Processing..." : paymentLabel()}</Text>
               </Pressable>
             </View>
@@ -253,7 +254,9 @@ export default function CheckoutScreen() {
               {paymentOptions.map((option) => {
                 const active =
                   option.kind === selectedMethod?.kind &&
-                  (option.kind !== "saved_card" || option.card?.id === selectedMethod.card?.id);
+                  (option.kind !== "saved_card" ||
+                    (selectedMethod?.kind === "saved_card" &&
+                      option.card?.id === selectedMethod.card?.id));
 
                 return (
                   <Pressable
@@ -265,17 +268,7 @@ export default function CheckoutScreen() {
                     }}
                   >
                     <View style={styles.methodIconBox}>
-                      <Ionicons
-                        name={
-                          option.kind === "apple_pay"
-                            ? "logo-apple"
-                            : option.kind === "paypal"
-                              ? "logo-paypal"
-                              : "card-outline"
-                        }
-                        size={28}
-                        color="#26312F"
-                      />
+                      <Ionicons name="card-outline" size={28} color="#26312F" />
                     </View>
                     <View style={styles.sheetOptionText}>
                       <Text style={styles.sheetOptionTitle}>{option.title}</Text>
@@ -380,6 +373,12 @@ const styles = StyleSheet.create({
     fontWeight: "900",
     color: "#26312F",
   },
+  panelHint: {
+    marginTop: 10,
+    color: "#72817F",
+    fontWeight: "600",
+    lineHeight: 22,
+  },
   methodRow: {
     marginTop: 18,
     flexDirection: "row",
@@ -454,7 +453,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 10,
   },
-  payButtonDark: { backgroundColor: "#000000" },
   payButtonDisabled: { opacity: 0.7 },
   payButtonText: { color: "#FFFFFF", fontSize: 18, fontWeight: "900" },
   sheetOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.22)", justifyContent: "flex-end" },

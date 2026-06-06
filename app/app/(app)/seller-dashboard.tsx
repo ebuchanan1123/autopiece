@@ -8,6 +8,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from "react-native";
 import { router, Stack } from "expo-router";
@@ -16,6 +17,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import Svg, { Circle, Defs, LinearGradient, Line, Path, Rect, Stop } from "react-native-svg";
 import { clearToken } from "@/src/lib/token";
+import { unregisterStoredPushTokenFromServer } from "@/src/features/notifications/push";
 import { ScreenBody } from "@/src/components/screen-body";
 import {
   getSellerOrders,
@@ -89,14 +91,113 @@ function getCutoff(timeframe: Timeframe) {
   return cutoff;
 }
 
-function getSeriesBuckets(timeframe: Timeframe) {
-  if (timeframe === "24h") return 6;
-  if (timeframe === "3d") return 3;
-  if (timeframe === "7d") return 7;
-  if (timeframe === "1m") return 6;
-  if (timeframe === "3m") return 6;
-  if (timeframe === "1yr") return 12;
-  return 6;
+function startOfHour(date: Date) {
+  const next = new Date(date);
+  next.setMinutes(0, 0, 0);
+  return next;
+}
+
+function startOfDay(date: Date) {
+  const next = new Date(date);
+  next.setHours(0, 0, 0, 0);
+  return next;
+}
+
+function startOfMonth(date: Date) {
+  const next = startOfDay(date);
+  next.setDate(1);
+  return next;
+}
+
+function addHours(date: Date, hours: number) {
+  const next = new Date(date);
+  next.setHours(next.getHours() + hours);
+  return next;
+}
+
+function addDays(date: Date, days: number) {
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+  return next;
+}
+
+function addMonths(date: Date, months: number) {
+  const next = new Date(date);
+  next.setMonth(next.getMonth() + months);
+  return next;
+}
+
+function getBucketDate(date: Date, timeframe: Timeframe) {
+  if (timeframe === "24h") return startOfHour(date);
+  if (timeframe === "Max") return startOfMonth(date);
+  return startOfDay(date);
+}
+
+function getBucketKey(date: Date, timeframe: Timeframe) {
+  const bucketDate = getBucketDate(date, timeframe);
+  if (timeframe === "24h") {
+    return `${bucketDate.getFullYear()}-${bucketDate.getMonth()}-${bucketDate.getDate()}-${bucketDate.getHours()}`;
+  }
+  if (timeframe === "Max") {
+    return `${bucketDate.getFullYear()}-${bucketDate.getMonth()}`;
+  }
+  return `${bucketDate.getFullYear()}-${bucketDate.getMonth()}-${bucketDate.getDate()}`;
+}
+
+function buildBucketDates(orders: SellerOrderItem[], timeframe: Timeframe) {
+  const now = new Date();
+
+  if (timeframe === "24h") {
+    const end = startOfHour(now);
+    return Array.from({ length: 24 }, (_, index) => addHours(end, index - 23));
+  }
+
+  if (timeframe === "3d") {
+    const end = startOfDay(now);
+    return Array.from({ length: 3 }, (_, index) => addDays(end, index - 2));
+  }
+
+  if (timeframe === "7d") {
+    const end = startOfDay(now);
+    return Array.from({ length: 7 }, (_, index) => addDays(end, index - 6));
+  }
+
+  if (timeframe === "1m") {
+    const end = startOfDay(now);
+    return Array.from({ length: 30 }, (_, index) => addDays(end, index - 29));
+  }
+
+  if (timeframe === "3m") {
+    const end = startOfDay(now);
+    return Array.from({ length: 90 }, (_, index) => addDays(end, index - 89));
+  }
+
+  if (timeframe === "1yr") {
+    const end = startOfDay(now);
+    return Array.from({ length: 365 }, (_, index) => addDays(end, index - 364));
+  }
+
+  const paidOrders = orders.filter((item) => item.status === "paid" || item.status === "picked_up");
+  if (!paidOrders.length) {
+    const end = startOfMonth(now);
+    return Array.from({ length: 6 }, (_, index) => addMonths(end, index - 5));
+  }
+
+  const dates = paidOrders
+    .map((item) => new Date(item.createdAt))
+    .filter((item) => !Number.isNaN(item.getTime()))
+    .sort((a, b) => a.getTime() - b.getTime());
+  const first = startOfMonth(dates[0] ?? now);
+  const end = startOfMonth(now);
+  const buckets: Date[] = [];
+  const cursor = new Date(first);
+
+  while (cursor.getTime() <= end.getTime()) {
+    buckets.push(new Date(cursor));
+    cursor.setMonth(cursor.getMonth() + 1);
+  }
+
+  return buckets;
 }
 
 function buildSeries(orders: SellerOrderItem[], timeframe: Timeframe) {
@@ -105,32 +206,19 @@ function buildSeries(orders: SellerOrderItem[], timeframe: Timeframe) {
   const filtered = cutoff
     ? paidOrders.filter((item) => new Date(item.createdAt).getTime() >= cutoff.getTime())
     : paidOrders;
+  const map = new Map<string, { label: string; revenue: number; sales: number }>();
 
-  if (!filtered.length) {
-    return Array.from({ length: getSeriesBuckets(timeframe) }, (_, index) => ({
-      label: `-${getSeriesBuckets(timeframe) - index - 1}`,
+  for (const bucketDate of buildBucketDates(filtered, timeframe)) {
+    map.set(getBucketKey(bucketDate, timeframe), {
+      label: formatPeriod(bucketDate, timeframe),
       revenue: 0,
       sales: 0,
-    }));
+    });
   }
 
-  const map = new Map<string, { label: string; revenue: number; sales: number }>();
   for (const item of filtered) {
     const date = new Date(item.createdAt);
-    let key = "";
-
-    if (timeframe === "24h") {
-      key = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}-${date.getHours()}`;
-    } else if (timeframe === "3d" || timeframe === "7d" || timeframe === "1m") {
-      key = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
-    } else if (timeframe === "3m") {
-      const week = Math.floor(date.getDate() / 7);
-      key = `${date.getFullYear()}-${date.getMonth()}-${week}`;
-    } else if (timeframe === "1yr") {
-      key = `${date.getFullYear()}-${date.getMonth()}`;
-    } else {
-      key = `${date.getFullYear()}-${date.getMonth()}`;
-    }
+    const key = getBucketKey(date, timeframe);
 
     const current = map.get(key);
     if (current) {
@@ -145,9 +233,7 @@ function buildSeries(orders: SellerOrderItem[], timeframe: Timeframe) {
     }
   }
 
-  const values = Array.from(map.values());
-  values.sort((a, b) => a.label.localeCompare(b.label));
-  return values.slice(-getSeriesBuckets(timeframe));
+  return Array.from(map.values());
 }
 
 function GraphCard({
@@ -307,20 +393,13 @@ function GraphCard({
           <View style={styles.chartTapOverlay} pointerEvents="box-none">
             {series.map((item, index) => (
               <Pressable
-                key={`${item.label}-hit`}
+                key={`${item.label}-${index}-hit`}
                 onPress={() => setSelectedIndex(index)}
                 style={styles.chartTapZone}
               />
             ))}
           </View>
 
-          <View style={styles.xAxis}>
-            {series.map((item) => (
-              <Text key={`${item.label}-x`} style={styles.xAxisLabel} numberOfLines={1}>
-                {item.label}
-              </Text>
-            ))}
-          </View>
         </View>
       </View>
     </View>
@@ -373,6 +452,7 @@ function StatCard({
 function sellerStatusLabel(status?: string) {
   if (status === "picked_up") return "Picked up";
   if (status === "paid") return "In progress";
+  if (status === "expired") return "Expired";
   if (status === "reserved") return "Reserved";
   return status?.replace("_", " ") ?? "Order";
 }
@@ -387,6 +467,9 @@ export default function SellerDashboardScreen() {
   const [error, setError] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [timeframe, setTimeframe] = useState<Timeframe>("7d");
+  const [pickupTarget, setPickupTarget] = useState<SellerOrderItem | null>(null);
+  const [pickupPinInput, setPickupPinInput] = useState("");
+  const [pickupSaving, setPickupSaving] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -411,9 +494,9 @@ export default function SellerDashboardScreen() {
   }, []);
 
   const markPickedUp = useCallback(
-    async (itemId: number) => {
+    async (itemId: number, pickupPin: string) => {
       try {
-        await markSellerOrderItemPickedUp(itemId);
+        await markSellerOrderItemPickedUp(itemId, pickupPin);
         await load();
       } catch (e: any) {
         Alert.alert("Could not update order", e?.message ?? "Please try again.");
@@ -421,6 +504,25 @@ export default function SellerDashboardScreen() {
     },
     [load]
   );
+
+  const submitPickupConfirmation = useCallback(async () => {
+    if (!pickupTarget) return;
+
+    const normalizedPin = pickupPinInput.trim();
+    if (!/^\d{4}$/.test(normalizedPin)) {
+      Alert.alert("Invalid PIN", "Enter the 4-digit pickup PIN shown on the customer's screen.");
+      return;
+    }
+
+    try {
+      setPickupSaving(true);
+      await markPickedUp(pickupTarget.id, normalizedPin);
+      setPickupTarget(null);
+      setPickupPinInput("");
+    } finally {
+      setPickupSaving(false);
+    }
+  }, [markPickedUp, pickupPinInput, pickupTarget]);
 
   useEffect(() => {
     load();
@@ -477,6 +579,10 @@ export default function SellerDashboardScreen() {
   );
   const soldOutListings = useMemo(
     () => listings.filter((item) => item.status === "sold_out").length,
+    [listings]
+  );
+  const pausedListings = useMemo(
+    () => listings.filter((item) => item.status === "hidden").length,
     [listings]
   );
   const liveQuantityRemaining = useMemo(
@@ -583,7 +689,7 @@ export default function SellerDashboardScreen() {
 
           <View style={styles.statsRow}>
             <StatCard label="Sell-through" value={`${sellThroughRate}%`} footnote={`${liveQuantityRemaining} live units left`} />
-            <StatCard label="Avg order" value={`${averageOrderValue} DZD`} footnote={`${activeListings} active listings`} />
+            <StatCard label="Avg order" value={`${averageOrderValue} DZD`} footnote={`${activeListings} active • ${pausedListings} paused`} />
           </View>
 
           <View style={styles.insightRow}>
@@ -598,7 +704,7 @@ export default function SellerDashboardScreen() {
             <View style={styles.insightCard}>
               <Text style={styles.insightLabel}>Listings sold out</Text>
               <Text style={styles.insightValue}>{soldOutListings}</Text>
-              <Text style={styles.insightSubtext}>bags currently sold out</Text>
+              <Text style={styles.insightSubtext}>{pausedListings} paused separately from stock-outs</Text>
             </View>
           </View>
 
@@ -661,12 +767,10 @@ export default function SellerDashboardScreen() {
                 {item.status !== "picked_up" ? (
                   <Pressable
                     style={styles.pickupBtn}
-                    onPress={() =>
-                      Alert.alert("Set as picked up", "Mark this bag as picked up once the customer has shown their reservation screen.", [
-                        { text: "Cancel", style: "cancel" },
-                        { text: "Set picked up", onPress: () => markPickedUp(item.id) },
-                      ])
-                    }
+                    onPress={() => {
+                      setPickupTarget(item);
+                      setPickupPinInput("");
+                    }}
                   >
                     <Text style={styles.pickupBtnText}>Set picked up</Text>
                   </Pressable>
@@ -723,6 +827,7 @@ export default function SellerDashboardScreen() {
                       text: "Log out",
                       style: "destructive",
                       onPress: async () => {
+                        await unregisterStoredPushTokenFromServer();
                         await clearToken();
                         router.replace("/(auth)/login");
                       },
@@ -732,6 +837,35 @@ export default function SellerDashboardScreen() {
               >
                 <Text style={styles.logoutText}>Log out</Text>
               </Pressable>
+            </View>
+          </View>
+        </Modal>
+
+        <Modal visible={!!pickupTarget} transparent animationType="fade" onRequestClose={() => setPickupTarget(null)}>
+          <View style={styles.pickupOverlay}>
+            <Pressable style={styles.pickupBackdrop} onPress={() => setPickupTarget(null)} />
+            <View style={styles.pickupModalCard}>
+              <Text style={styles.pickupModalTitle}>Confirm customer pickup</Text>
+              <Text style={styles.pickupModalBody}>
+                Ask the customer to show their 4-digit pickup PIN, then enter it here before handing over the bag.
+              </Text>
+              <TextInput
+                style={styles.pickupPinInput}
+                value={pickupPinInput}
+                onChangeText={setPickupPinInput}
+                keyboardType="number-pad"
+                maxLength={4}
+                placeholder="1234"
+                placeholderTextColor="#8B9794"
+              />
+              <View style={styles.pickupModalActions}>
+                <Pressable style={styles.pickupGhostBtn} onPress={() => setPickupTarget(null)}>
+                  <Text style={styles.pickupGhostText}>Cancel</Text>
+                </Pressable>
+                <Pressable style={styles.pickupSolidBtn} onPress={submitPickupConfirmation} disabled={pickupSaving}>
+                  <Text style={styles.pickupSolidText}>{pickupSaving ? "Checking..." : "Confirm pickup"}</Text>
+                </Pressable>
+              </View>
             </View>
           </View>
         </Modal>
@@ -895,17 +1029,70 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     top: 0,
-    bottom: 30,
+    bottom: 0,
     flexDirection: "row",
   },
   chartTapZone: { flex: 1 },
-  xAxis: {
-    marginTop: 8,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    gap: 6,
+  pickupOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(27, 37, 35, 0.32)",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 20,
   },
-  xAxisLabel: { flex: 1, color: "#7B8885", fontSize: 11, fontWeight: "700", textAlign: "center" },
+  pickupBackdrop: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+  },
+  pickupModalCard: {
+    width: "100%",
+    maxWidth: 420,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: "#E1EAE6",
+    padding: 20,
+  },
+  pickupModalTitle: { color: "#1F2C2B", fontSize: 22, fontWeight: "900" },
+  pickupModalBody: { marginTop: 10, color: "#5D6A68", fontWeight: "700", lineHeight: 22 },
+  pickupPinInput: {
+    marginTop: 18,
+    borderWidth: 1,
+    borderColor: "#D8E4E0",
+    borderRadius: 18,
+    backgroundColor: "#F8FBFA",
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    textAlign: "center",
+    fontSize: 28,
+    fontWeight: "900",
+    letterSpacing: 10,
+    color: "#1F2C2B",
+  },
+  pickupModalActions: { marginTop: 18, flexDirection: "row", gap: 12 },
+  pickupGhostBtn: {
+    flex: 1,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#D8E4E0",
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 14,
+  },
+  pickupGhostText: { color: "#1F2C2B", fontWeight: "800" },
+  pickupSolidBtn: {
+    flex: 1,
+    borderRadius: 16,
+    backgroundColor: "#0C766F",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 14,
+  },
+  pickupSolidText: { color: "#FFFFFF", fontWeight: "900" },
   orderCard: {
     backgroundColor: "#FFFFFF",
     borderWidth: 1,

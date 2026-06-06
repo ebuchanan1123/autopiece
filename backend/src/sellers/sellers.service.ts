@@ -133,6 +133,7 @@ export class SellersService {
         body: JSON.stringify({
           textQuery,
           maxResultCount: 6,
+          regionCode: "DZ",
         }),
       },
     );

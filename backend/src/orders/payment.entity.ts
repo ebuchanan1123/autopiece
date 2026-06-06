@@ -7,8 +7,12 @@ import {
   Index,
 } from "typeorm";
 
-export type PaymentProvider = "satim" | "apple_pay" | "paypal";
-export type PaymentStatus = "initiated" | "success" | "failed";
+export type PaymentProvider = "satim";
+export type PaymentStatus =
+  | "initiated"
+  | "requires_action"
+  | "success"
+  | "failed";
 
 @Entity()
 @Index(["orderId"])

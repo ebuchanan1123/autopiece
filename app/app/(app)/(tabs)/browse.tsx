@@ -1048,6 +1048,7 @@ const styles = StyleSheet.create({
     borderColor: "#E1EAE6",
     backgroundColor: "#fff",
   },
+  heartText: { color: "#0C766F", fontSize: 18, fontWeight: "900" },
   badge: {
     paddingHorizontal: 10,
     paddingVertical: 6,

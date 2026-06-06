@@ -12,6 +12,8 @@ import { Listing } from "../listings/listing.entity";
 
 export type OrderItemStatus =
   | "reserved"
+  | "payment_pending"
+  | "payment_failed"
   | "paid"
   | "picked_up"
   | "cancelled"
@@ -52,7 +54,7 @@ export class OrderItem {
   @Column({ type: "varchar", length: 32 })
   saleNumber: string;
 
-  @Column({ type: "varchar", length: 16, default: "reserved" })
+  @Column({ type: "varchar", length: 24, default: "reserved" })
   status: OrderItemStatus;
 
   @Column({ type: "timestamptz", nullable: true })

@@ -204,10 +204,10 @@ export default function SellerListingNewScreen() {
 
           <View style={styles.card}>
             <Text style={styles.label}>Price (DZD)</Text>
-            <TextInput style={styles.input} value={form.priceDzd} onChangeText={(priceDzd) => setForm({ ...form, priceDzd })} keyboardType="number-pad" placeholder="900" placeholderTextColor="#6F7D7B" />
+            <TextInput style={styles.input} value={form.priceDzd} onChangeText={(priceDzd) => setForm({ ...form, priceDzd })} keyboardType="number-pad" placeholder="Ex: 900" placeholderTextColor="#6F7D7B" />
 
             <Text style={styles.label}>Original value (DZD)</Text>
-            <TextInput style={styles.input} value={form.originalValueDzd} onChangeText={(originalValueDzd) => setForm({ ...form, originalValueDzd })} keyboardType="number-pad" placeholder="2000" placeholderTextColor="#6F7D7B" />
+            <TextInput style={styles.input} value={form.originalValueDzd} onChangeText={(originalValueDzd) => setForm({ ...form, originalValueDzd })} keyboardType="number-pad" placeholder="Ex: 2000" placeholderTextColor="#6F7D7B" />
 
             <Text style={styles.label}>Quantity available</Text>
             <TextInput style={styles.input} value={form.quantityAvailable} onChangeText={(quantityAvailable) => setForm({ ...form, quantityAvailable })} keyboardType="number-pad" placeholder="4" placeholderTextColor="#6F7D7B" />

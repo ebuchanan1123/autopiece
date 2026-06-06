@@ -79,8 +79,7 @@ export async function toggleFavourite(listingId: number) {
   try {
     if (wasFav) await favouriteRemove(listingId);
     else await favouriteAdd(listingId);
-  } catch (err) {
-    console.log("toggleFavourite failed:", err);
+  } catch {
     setIds(prev); // true revert
   }
 }
